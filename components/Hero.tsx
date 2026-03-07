@@ -64,6 +64,7 @@ export default function Hero() {
           className="flex gap-4 justify-center flex-wrap"
         >
           <button
+            type="button"
             onClick={scrollToProjects}
             className="px-6 py-3 bg-accent text-black font-mono text-sm font-bold uppercase tracking-widest hover:bg-accent/80 transition-colors"
           >
