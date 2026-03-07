@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect } from 'react'
+import Image from 'next/image'
 import { Project } from '@/data/portfolio'
 
 export default function ProjectDrawer({
@@ -62,7 +63,7 @@ export default function ProjectDrawer({
 
               <p className="text-text/80 leading-relaxed mb-8">{project.detail}</p>
 
-              <div>
+              <div className="mb-8">
                 <p className="font-mono text-xs text-muted uppercase tracking-widest mb-3">Technologies</p>
                 <div className="flex flex-wrap gap-2">
                   {project.tags.map((tag) => (
@@ -75,6 +76,55 @@ export default function ProjectDrawer({
                   ))}
                 </div>
               </div>
+
+              {project.media && project.media.length > 0 && (() => {
+                const images = project.media.filter((m) => m.type === 'image' || m.type === 'press')
+                const pdfs = project.media.filter((m) => m.type === 'pdf')
+                return (
+                  <>
+                    {images.length > 0 && (
+                      <div className="flex flex-col gap-4 mb-8">
+                        {images.map((m, i) => (
+                          <figure key={i}>
+                            <div className="relative w-full aspect-video overflow-hidden border border-border bg-surface">
+                              <Image
+                                src={m.src}
+                                alt={m.caption ?? ''}
+                                fill
+                                className="object-cover"
+                              />
+                              {m.type === 'press' && (
+                                <div className="absolute top-2 left-2 font-mono text-xs bg-accent text-black px-2 py-0.5 uppercase tracking-widest">
+                                  Press
+                                </div>
+                              )}
+                            </div>
+                            {m.caption && (
+                              <figcaption className="font-mono text-xs text-muted mt-1.5">{m.caption}</figcaption>
+                            )}
+                          </figure>
+                        ))}
+                      </div>
+                    )}
+                    {pdfs.length > 0 && (
+                      <div className="flex flex-col gap-2">
+                        {pdfs.map((m, i) => (
+                          <a
+                            key={i}
+                            href={m.src}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 border border-border px-4 py-3 font-mono text-sm text-text hover:border-accent hover:text-accent transition-colors group"
+                          >
+                            <span aria-hidden="true" className="text-accent">↗</span>
+                            {m.label ?? 'View Document'}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
             </div>
           </motion.div>
         </>

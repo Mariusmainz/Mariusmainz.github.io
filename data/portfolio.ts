@@ -29,6 +29,13 @@ export interface EducationEntry {
   description?: string
 }
 
+export interface ProjectMedia {
+  type: 'image' | 'pdf' | 'press'
+  src: string
+  caption?: string
+  label?: string
+}
+
 export interface Project {
   id: string
   title: string
@@ -36,6 +43,7 @@ export interface Project {
   tags: string[]
   detail: string
   type: 'professional' | 'personal'
+  media?: ProjectMedia[]
 }
 
 export type Skills = Record<string, string[]>
@@ -158,27 +166,61 @@ export const projects: Project[] = [
   },
   {
     id: 'liquid-container',
-    title: 'Automated Liquid Container',
-    shortDescription: 'Embedded system with DC motors, sensors, and timer.',
-    tags: ['Embedded', 'C', 'Sensors', 'DC Motors'],
-    detail: 'Automated liquid container with DC motors, internal timer, sensors, and a trigger mechanism. Built as a personal embedded systems project.',
+    title: 'Ølbong',
+    shortDescription: 'Automated liquid dispenser with DC motors, sensors, and internal timer.',
+    tags: ['Embedded', 'C', 'DC Motors', 'Sensors', '3D Printing'],
+    detail: 'Ølbong is an automated liquid dispenser built from scratch — designed, assembled, and programmed as a personal embedded systems project. It uses DC motors, a custom trigger mechanism, internal timer logic, and multiple sensors to automate dispensing. Featured in Politiken.',
     type: 'personal',
+    media: [
+      { type: 'image', src: '/Resources/projects/olbong-render.png', caption: '3D render of the final design' },
+      { type: 'image', src: '/Resources/projects/olbong-workspace.jpg', caption: 'Assembly workspace' },
+      { type: 'press', src: '/Resources/projects/olbong-politiken.jpg', caption: 'Featured in Politiken' },
+    ],
   },
   {
     id: 'engagement-circuit',
-    title: 'Engagement Feedback Circuit',
-    shortDescription: 'LCD display circuit with cloud control.',
-    tags: ['Embedded', 'IoT', 'LCD', 'Cloud'],
-    detail: 'Engagement feedback circuit with LCD display and cloud control interface.',
+    title: 'Companio',
+    shortDescription: 'Smart engagement feedback device with LCD display and cloud control.',
+    tags: ['Embedded', 'IoT', 'LCD', 'Cloud', 'Product Design'],
+    detail: 'Companio is a personal project exploring real-time engagement feedback through a hardware device with an LCD display and cloud-connected control interface. Includes a working prototype and a product application concept.',
     type: 'personal',
+    media: [
+      { type: 'image', src: '/Resources/projects/companio-prototype.png', caption: 'Prototype v2' },
+      { type: 'pdf', src: '/Resources/projects/companio-application.pdf', label: 'View Application' },
+    ],
   },
   {
     id: 'thesis',
     title: 'Bachelor Thesis: Loudspeaker Protection',
     shortDescription: 'Dynamic DSP filters for loudspeaker protection.',
     tags: ['DSP', 'MATLAB', 'Audio', 'Thesis'],
-    detail: '"Protection Algorithms for Loudspeakers": Investigation of dynamic filters for mechanical and thermal protection of loudspeakers using DSP.',
+    detail: '"Protection Algorithms for Loudspeakers": Investigation of dynamic filters for mechanical and thermal protection of loudspeakers using DSP. Submitted as part of the BSc in Electrical Engineering at DTU.',
     type: 'personal',
+    media: [
+      { type: 'pdf', src: '/Resources/projects/loudspeaker-protection.pdf', label: 'Read Thesis' },
+    ],
+  },
+  {
+    id: 'drone',
+    title: 'Autonomous Drone Navigation',
+    shortDescription: 'DTU project on autonomous drone path planning and control.',
+    tags: ['Embedded', 'Control Systems', 'DTU', 'Autonomous'],
+    detail: 'DTU course project on autonomous drone navigation, covering path planning, sensor fusion, and control system design.',
+    type: 'personal',
+    media: [
+      { type: 'pdf', src: '/Resources/projects/drone-poster.pdf', label: 'View Poster' },
+    ],
+  },
+  {
+    id: 'sorting-machine',
+    title: 'Automated Sorting Machine',
+    shortDescription: 'DTU group project: automated object sorting system.',
+    tags: ['Embedded', 'Mechanical', 'DTU', 'Automation'],
+    detail: 'Group project at DTU designing and building an automated sorting machine. Covers mechanical design, embedded control, and systems integration.',
+    type: 'personal',
+    media: [
+      { type: 'pdf', src: '/Resources/projects/sorting-machine.pdf', label: 'View Report' },
+    ],
   },
 ]
 
