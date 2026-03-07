@@ -2,20 +2,35 @@
 
 import { useScroll, useTransform, motion } from 'framer-motion'
 
-// PCB-style trace: right-angle turns down the left side of the viewport
+// Unpredictable PCB trace with varying run lengths and directions
 // ViewBox: 0 0 260 1000
 const TRACE_PATH =
-  'M 40 0 L 40 100 L 180 100 L 180 220 L 60 220 L 60 360 L 200 360 L 200 490 L 50 490 L 50 630 L 190 630 L 190 760 L 70 760 L 70 900 L 210 900 L 210 1000'
+  'M 30 0 L 30 90 L 200 90 L 200 190 L 80 190 L 80 310 L 210 310 L 210 390 L 50 390 L 50 500 L 175 500 L 175 620 L 35 620 L 35 730 L 195 730 L 195 850 L 65 850 L 65 940 L 185 940 L 185 1000'
 
 const VIAS: [number, number][] = [
-  [40, 100], [180, 100],
-  [180, 220], [60, 220],
-  [60, 360], [200, 360],
-  [200, 490], [50, 490],
-  [50, 630], [190, 630],
-  [190, 760], [70, 760],
-  [70, 900], [210, 900],
+  [30, 90], [200, 90],
+  [200, 190], [80, 190],
+  [80, 310], [210, 310],
+  [210, 390], [50, 390],
+  [50, 500], [175, 500],
+  [175, 620], [35, 620],
+  [35, 730], [195, 730],
+  [195, 850], [65, 850],
+  [65, 940], [185, 940],
 ]
+
+// Inductor coil on horizontal segment y=90, x=100→145
+// 4 upward bumps, each 10px wide
+const INDUCTOR_PATH = 'M 100 90 Q 105 82 110 90 Q 115 82 120 90 Q 125 82 130 90 Q 135 82 140 90'
+
+// Resistor rectangle on horizontal segment y=390, x=118→158
+// rect drawn as path so we can animate it
+const RESISTOR_PATH = 'M 118 384 L 158 384 L 158 396 L 118 396 Z'
+
+// Capacitor plates on vertical segment x=175, y=548→572
+// Two horizontal lines with a gap
+const CAP_PLATE_TOP = 'M 163 548 L 187 548'
+const CAP_PLATE_BOT = 'M 163 572 L 187 572'
 
 export default function CircuitTrace() {
   const { scrollYProgress } = useScroll()
@@ -24,7 +39,7 @@ export default function CircuitTrace() {
 
   return (
     <div
-      className="fixed left-0 top-0 bottom-0 hidden lg:block pointer-events-none z-0"
+      className="fixed left-0 top-0 bottom-0 hidden lg:block pointer-events-none -z-10"
       style={{ width: '260px' }}
       aria-hidden="true"
     >
@@ -57,7 +72,7 @@ export default function CircuitTrace() {
           />
         ))}
 
-        {/* Drawn trace */}
+        {/* Main trace */}
         <motion.path
           d={TRACE_PATH}
           fill="none"
@@ -66,6 +81,52 @@ export default function CircuitTrace() {
           strokeLinecap="square"
           strokeLinejoin="miter"
           style={{ pathLength, opacity }}
+          filter="url(#trace-glow)"
+        />
+
+        {/* ── Inductor (coil bumps on y=90 horizontal) ── */}
+        {/* Mask straight trace underneath */}
+        <motion.rect x={98} y={86} width={44} height={8} fill="#0a0a0a" style={{ opacity }} />
+        <motion.path
+          d={INDUCTOR_PATH}
+          fill="none"
+          stroke="#00d4ff"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          style={{ opacity }}
+          filter="url(#trace-glow)"
+        />
+
+        {/* ── Resistor (IEC rectangle on y=390 horizontal) ── */}
+        {/* Mask trace inside rect */}
+        <motion.rect x={120} y={386} width={36} height={8} fill="#0a0a0a" style={{ opacity }} />
+        <motion.path
+          d={RESISTOR_PATH}
+          fill="none"
+          stroke="#00d4ff"
+          strokeWidth="1.5"
+          strokeLinejoin="miter"
+          style={{ opacity }}
+          filter="url(#trace-glow)"
+        />
+
+        {/* ── Capacitor (plates on x=175 vertical) ── */}
+        {/* Mask trace between plates */}
+        <motion.rect x={172} y={548} width={6} height={25} fill="#0a0a0a" style={{ opacity }} />
+        <motion.path
+          d={CAP_PLATE_TOP}
+          stroke="#00d4ff"
+          strokeWidth="2"
+          strokeLinecap="square"
+          style={{ opacity }}
+          filter="url(#trace-glow)"
+        />
+        <motion.path
+          d={CAP_PLATE_BOT}
+          stroke="#00d4ff"
+          strokeWidth="2"
+          strokeLinecap="square"
+          style={{ opacity }}
           filter="url(#trace-glow)"
         />
 
