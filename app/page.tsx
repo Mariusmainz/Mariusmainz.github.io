@@ -9,15 +9,17 @@ import CircuitTrace from '@/components/CircuitTrace'
 
 export default function Home() {
   return (
-    <main>
+    <>
       <CircuitTrace />
-      <Nav />
-      <Hero />
-      <About />
-      <Experience />
-      <Projects />
-      <Skills />
-      <Contact />
-    </main>
+      <main className="relative z-10">
+        <Nav />
+        <Hero />
+        <About />
+        <Experience />
+        <Projects />
+        <Skills />
+        <Contact />
+      </main>
+    </>
   )
 }

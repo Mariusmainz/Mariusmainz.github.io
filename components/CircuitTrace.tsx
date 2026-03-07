@@ -39,7 +39,7 @@ export default function CircuitTrace() {
 
   return (
     <div
-      className="fixed left-0 top-0 bottom-0 hidden lg:block pointer-events-none -z-10"
+      className="fixed left-0 top-0 bottom-0 hidden lg:block pointer-events-none z-0"
       style={{ width: '260px' }}
       aria-hidden="true"
     >
