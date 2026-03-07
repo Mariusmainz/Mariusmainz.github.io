@@ -14,16 +14,15 @@ export default function Skills() {
           <FadeIn key={category} delay={ci * 0.1}>
             <div>
               <p className="font-mono text-xs text-muted uppercase tracking-widest mb-4">{category}</p>
-              <div className="flex flex-wrap gap-2">
+              <ul role="list" className="flex flex-wrap gap-2">
                 {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="font-mono text-sm px-4 py-2 border border-border text-text hover:border-accent hover:text-accent transition-colors"
-                  >
-                    {tag}
-                  </span>
+                  <li key={tag}>
+                    <span className="font-mono text-sm px-4 py-2 border border-border text-text hover:border-accent hover:text-accent transition-colors block">
+                      {tag}
+                    </span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           </FadeIn>
         ))}
