@@ -160,8 +160,8 @@ export const projects: Project[] = [
     id: 'result-viewer',
     title: 'Result Viewer – IC Optimize OPUS',
     shortDescription: 'Application for viewing IC simulation results.',
-    tags: ['Software', 'IC Design', 'Tooling'],
-    detail: 'Result viewer application for IC Optimize OPUS, enabling engineers to visualize and compare simulation outputs efficiently.',
+    tags: ['Go', 'Vue', 'Wails', 'IC Design', 'Tooling'],
+    detail: 'Result viewer application for IC Optimize OPUS built with Wails — combining a Go backend with a Vue frontend. Enables engineers to visualize and compare simulation outputs efficiently.',
     type: 'professional',
     media: [
       { type: 'image', src: '/Resources/projects/result-viewer-screenshot.png', caption: 'Result Viewer application' },
