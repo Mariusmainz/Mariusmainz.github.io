@@ -27,7 +27,7 @@ export default function Projects() {
                 <span className="font-mono text-accent text-xs uppercase tracking-widest">
                   {project.type}
                 </span>
-                <span className="text-muted group-hover:text-accent transition-colors text-sm">↗</span>
+                <span aria-hidden="true" className="text-muted group-hover:text-accent transition-colors text-sm">↗</span>
               </div>
               <h3 className="font-semibold text-text group-hover:text-accent transition-colors mb-2">
                 {project.title}

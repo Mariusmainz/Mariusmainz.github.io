@@ -12,10 +12,11 @@ export default function ProjectDrawer({
   onClose: () => void
 }) {
   useEffect(() => {
+    if (!project) return
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [onClose])
+  }, [project, onClose])
 
   return (
     <AnimatePresence>
