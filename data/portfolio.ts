@@ -163,6 +163,9 @@ export const projects: Project[] = [
     tags: ['Software', 'IC Design', 'Tooling'],
     detail: 'Result viewer application for IC Optimize OPUS, enabling engineers to visualize and compare simulation outputs efficiently.',
     type: 'professional',
+    media: [
+      { type: 'image', src: '/Resources/projects/result-viewer-screenshot.png', caption: 'Result Viewer application' },
+    ],
   },
   {
     id: 'liquid-container',
