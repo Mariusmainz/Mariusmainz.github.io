@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const sections = ['About', 'Experience', 'Projects', 'Skills', 'Contact']
 
@@ -54,28 +54,35 @@ export default function Nav() {
       </div>
 
       {/* Mobile hamburger */}
-      <button className="md:hidden text-muted" onClick={() => setMenuOpen(!menuOpen)}>
-        <span className="font-mono text-sm">{menuOpen ? '✕' : '☰'}</span>
+      <button
+        aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+        className="md:hidden text-muted"
+        onClick={() => setMenuOpen(!menuOpen)}
+      >
+        <span aria-hidden="true" className="font-mono text-sm">{menuOpen ? '✕' : '☰'}</span>
       </button>
 
       {/* Mobile menu */}
-      {menuOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="absolute top-full left-0 right-0 bg-surface border-b border-border flex flex-col py-4"
-        >
-          {sections.map((s) => (
-            <button
-              key={s}
-              onClick={() => scrollTo(s.toLowerCase())}
-              className="font-mono text-xs uppercase tracking-widest text-muted hover:text-accent py-3 px-6 text-left"
-            >
-              {s}
-            </button>
-          ))}
-        </motion.div>
-      )}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute top-full left-0 right-0 bg-surface border-b border-border flex flex-col py-4"
+          >
+            {sections.map((s) => (
+              <button
+                key={s}
+                onClick={() => scrollTo(s.toLowerCase())}
+                className="font-mono text-xs uppercase tracking-widest text-muted hover:text-accent py-3 px-6 text-left"
+              >
+                {s}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.nav>
   )
 }
