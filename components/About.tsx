@@ -39,7 +39,7 @@ export default function About() {
             </div>
             <div className="flex gap-3">
               <span className="text-accent">tel</span>
-              <a href={`tel:${personal.phone}`} className="text-muted hover:text-accent transition-colors">
+              <a href={`tel:${personal.phone.replace(/\s/g, '')}`} className="text-muted hover:text-accent transition-colors">
                 {personal.phone}
               </a>
             </div>
