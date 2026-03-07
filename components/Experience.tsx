@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import Image from 'next/image'
 import FadeIn from './FadeIn'
 import { experience, education } from '@/data/portfolio'
 
@@ -56,9 +55,13 @@ function TimelineItem({
               {images && images.length > 0 && (
                 <div className="grid grid-cols-2 gap-2 mt-4">
                   {images.map((img, i) => (
-                    <div key={i} className="relative aspect-video overflow-hidden border border-border">
-                      <Image src={img.src} alt={img.caption ?? ''} fill className="object-cover" />
-                    </div>
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={i}
+                      src={img.src}
+                      alt={img.caption ?? ''}
+                      className="w-full aspect-video object-cover border border-border"
+                    />
                   ))}
                 </div>
               )}
