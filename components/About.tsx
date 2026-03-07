@@ -15,7 +15,7 @@ export default function About() {
           <div className="relative aspect-[3/4] max-w-sm overflow-hidden border border-border">
             <Image
               src={personal.photoPath}
-              alt={personal.name}
+              alt={`Profile photo of ${personal.name}`}
               fill
               className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
             />
@@ -39,11 +39,13 @@ export default function About() {
             </div>
             <div className="flex gap-3">
               <span className="text-accent">tel</span>
-              <span className="text-muted">{personal.phone}</span>
+              <a href={`tel:${personal.phone}`} className="text-muted hover:text-accent transition-colors">
+                {personal.phone}
+              </a>
             </div>
             <div className="flex gap-3">
               <span className="text-accent">li</span>
-              <a href={personal.linkedin} target="_blank" rel="noopener noreferrer" className="text-muted hover:text-accent transition-colors">
+              <a href={personal.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn profile" className="text-muted hover:text-accent transition-colors">
                 LinkedIn
               </a>
             </div>
