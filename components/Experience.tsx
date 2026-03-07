@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 import FadeIn from './FadeIn'
 import { experience, education } from '@/data/portfolio'
 
@@ -10,12 +11,14 @@ function TimelineItem({
   subtitle,
   period,
   description,
+  images,
   index,
 }: {
   title: string
   subtitle: string
   period: string
   description: string
+  images?: { src: string; caption?: string }[]
   index: number
 }) {
   const [open, setOpen] = useState(false)
@@ -43,14 +46,23 @@ function TimelineItem({
 
         <AnimatePresence>
           {open && (
-            <motion.p
+            <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="text-muted text-sm mt-3 leading-relaxed overflow-hidden"
+              className="overflow-hidden"
             >
-              {description}
-            </motion.p>
+              <p className="text-muted text-sm mt-3 leading-relaxed">{description}</p>
+              {images && images.length > 0 && (
+                <div className="grid grid-cols-2 gap-2 mt-4">
+                  {images.map((img, i) => (
+                    <div key={i} className="relative aspect-video overflow-hidden border border-border">
+                      <Image src={img.src} alt={img.caption ?? ''} fill className="object-cover" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
@@ -94,6 +106,7 @@ export default function Experience() {
               subtitle={`${e.field} · ${e.institution}`}
               period={e.period}
               description={e.description ?? e.field}
+              images={e.images}
               index={i}
             />
           ))}

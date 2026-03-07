@@ -27,6 +27,7 @@ export interface EducationEntry {
   institution: string
   period: string
   description?: string
+  images?: { src: string; caption?: string }[]
 }
 
 export interface ProjectMedia {
@@ -112,6 +113,12 @@ export const education: EducationEntry[] = [
     institution: 'HKUST',
     period: 'Sep 2025 – Dec 2025',
     description: 'Exchange semester at Hong Kong University of Science and Technology, focusing on IC design engineering.',
+    images: [
+      { src: '/Resources/hk1.jpg' },
+      { src: '/Resources/hk2.jpg' },
+      { src: '/Resources/hk3.jpg' },
+      { src: '/Resources/hk4.jpg' },
+    ],
   },
   {
     id: 'dtu-bsc',
@@ -136,7 +143,7 @@ export const projects: Project[] = [
     id: 'pcb-gpio',
     title: 'GPIO Test PCB',
     shortDescription: 'PCB design for automated GPIO testing circuit.',
-    tags: ['KiCAD', 'PCB Design', 'Hardware'],
+    tags: ['Altium Designer', 'PCB Design', 'Hardware'],
     detail: 'Designed a custom PCB for automated GPIO functional testing, integrating with the Python test framework.',
     type: 'professional',
   },
