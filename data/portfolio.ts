@@ -112,7 +112,7 @@ export const education: EducationEntry[] = [
     field: 'IC Design Engineering',
     institution: 'HKUST',
     period: 'Sep 2025 – Dec 2025',
-    description: 'Exchange semester at Hong Kong University of Science and Technology, focusing on IC design engineering.',
+    description: 'Exchange semester at Hong Kong University of Science and Technology, focusing on IC design engineering. Courses: CMOS VLSI Design, Semiconductor Devices for Integrated Circuit Design, Business for Electronic Engineers.',
     images: [
       { src: '/Resources/hk1.jpg' },
       { src: '/Resources/hk2.jpg' },
