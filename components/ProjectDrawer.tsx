@@ -61,7 +61,11 @@ export default function ProjectDrawer({
                 {project.type === 'professional' ? 'Professional Project' : 'Personal Project'}
               </p>
 
-              <p className="text-text/80 leading-relaxed mb-8">{project.detail}</p>
+              <div className="text-text/80 leading-relaxed mb-8 flex flex-col gap-4">
+                {project.detail.split('\n\n').map((para, i) => (
+                  <p key={i}>{para}</p>
+                ))}
+              </div>
 
               <div className="mb-8">
                 <p className="font-mono text-xs text-muted uppercase tracking-widest mb-3">Technologies</p>
