@@ -26,6 +26,7 @@ export interface EducationEntry {
   field: string
   institution: string
   period: string
+  description?: string
 }
 
 export interface Project {
@@ -94,6 +95,7 @@ export const education: EducationEntry[] = [
     field: 'Electrical Engineering (IC Design)',
     institution: 'DTU',
     period: '2024 – Present',
+    description: 'Specializing in IC design at DTU Electro. Coursework covers analog/digital IC design, VLSI, and semiconductor physics.',
   },
   {
     id: 'hkust',
@@ -101,6 +103,7 @@ export const education: EducationEntry[] = [
     field: 'IC Design Engineering',
     institution: 'HKUST',
     period: 'Sep 2025 – Dec 2025',
+    description: 'Exchange semester at Hong Kong University of Science and Technology, focusing on IC design engineering.',
   },
   {
     id: 'dtu-bsc',
@@ -108,6 +111,7 @@ export const education: EducationEntry[] = [
     field: 'Electrical Engineering',
     institution: 'DTU',
     period: '2020 – 2023',
+    description: 'Core electrical engineering curriculum: circuit theory, signals, embedded systems, and electronics.',
   },
 ]
 

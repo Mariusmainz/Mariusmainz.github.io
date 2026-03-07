@@ -22,7 +22,7 @@ function TimelineItem({
 
   return (
     <FadeIn delay={index * 0.08}>
-      <div className="relative pl-8 pb-10 border-l border-border last:border-transparent">
+      <div className="relative pl-8 pb-10 border-l border-border">
         {/* Dot */}
         <div className="absolute left-[-5px] top-1 w-2.5 h-2.5 rounded-full border-2 border-accent bg-bg" />
 
@@ -93,7 +93,7 @@ export default function Experience() {
               title={e.degree}
               subtitle={`${e.field} · ${e.institution}`}
               period={e.period}
-              description={e.field}
+              description={e.description ?? e.field}
               index={i}
             />
           ))}
