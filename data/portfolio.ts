@@ -166,7 +166,7 @@ export const projects: Project[] = [
   },
   {
     id: 'liquid-container',
-    title: 'Automated Liquid Container',
+    title: 'Automated Liquid Container (Beer Bong)',
     shortDescription: 'Automated liquid dispenser with DC motors, sensors, and internal timer.',
     tags: ['Embedded', 'C', 'DC Motors', 'Sensors', '3D Printing'],
     detail: 'Ølbong is an automated liquid dispenser built from scratch — designed, assembled, and programmed as a personal embedded systems project. It uses DC motors, a custom trigger mechanism, internal timer logic, and multiple sensors to automate dispensing. Featured in Politiken.',
