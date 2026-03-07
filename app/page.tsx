@@ -5,10 +5,12 @@ import Experience from '@/components/Experience'
 import Projects from '@/components/Projects'
 import Skills from '@/components/Skills'
 import Contact from '@/components/Contact'
+import CircuitTrace from '@/components/CircuitTrace'
 
 export default function Home() {
   return (
     <main>
+      <CircuitTrace />
       <Nav />
       <Hero />
       <About />
