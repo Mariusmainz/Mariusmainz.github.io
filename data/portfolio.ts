@@ -1,4 +1,45 @@
-export const personal = {
+export interface PersonalInfo {
+  name: string
+  title: string
+  tagline: string
+  email: string
+  phone: string
+  location: string
+  linkedin: string
+  cvPath: string
+  photoPath: string
+  about: string
+}
+
+export interface ExperienceEntry {
+  id: string
+  role: string
+  company: string
+  location: string
+  period: string
+  description: string
+}
+
+export interface EducationEntry {
+  id: string
+  degree: string
+  field: string
+  institution: string
+  period: string
+}
+
+export interface Project {
+  id: string
+  title: string
+  shortDescription: string
+  tags: string[]
+  detail: string
+  type: 'professional' | 'personal'
+}
+
+export type Skills = Record<string, string[]>
+
+export const personal: PersonalInfo = {
   name: 'Marius Mainz Elkjær',
   title: 'MSc Student · Electrical Engineering',
   tagline: 'IC design, embedded systems, and hardware-aware software.',
@@ -11,7 +52,7 @@ export const personal = {
   about: `Electrical engineering student specializing in IC design. Experienced in designing, simulating, and testing electronic systems, with a strong foundation in circuit analysis and hardware-aware software development. Four years of experience in professional engineering teams, with a strong interest in startup environments.`,
 }
 
-export const experience = [
+export const experience: ExperienceEntry[] = [
   {
     id: 'ic-optimize',
     role: 'Student Assistant',
@@ -46,7 +87,7 @@ export const experience = [
   },
 ]
 
-export const education = [
+export const education: EducationEntry[] = [
   {
     id: 'dtu-msc',
     degree: "Master's Degree",
@@ -70,7 +111,7 @@ export const education = [
   },
 ]
 
-export const projects = [
+export const projects: Project[] = [
   {
     id: 'audio-test',
     title: 'Automated Audio Test Setup',
@@ -137,7 +178,7 @@ export const projects = [
   },
 ]
 
-export const skills = {
+export const skills: Skills = {
   'Embedded & Hardware': ['Embedded Systems', 'PCB Design', 'FPGA', 'Circuit Analysis', 'Analog IC Design'],
   'Software & Tools': ['Python', 'C', 'C++', 'MATLAB', 'Robot Framework', 'Test Automation'],
   'EDA & CAD': ['Cadence', 'KiCAD', 'LTSpice', 'Xilinx Vivado', 'Quartus', 'ORFS', 'APx', 'OMNeT++'],
