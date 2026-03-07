@@ -8,7 +8,7 @@ export default function Contact() {
         <p className="font-mono text-accent text-xs tracking-[0.3em] uppercase mb-2">05 /</p>
         <h2 className="text-3xl md:text-4xl font-bold text-text mb-4">Contact</h2>
         <p className="text-muted text-lg mb-16 max-w-lg">
-          Open to opportunities, collaborations, and interesting problems.
+          {personal.tagline}
         </p>
       </FadeIn>
 
@@ -32,7 +32,7 @@ export default function Contact() {
             <span className="text-lg group-hover:underline">LinkedIn</span>
           </a>
           <a
-            href={`tel:${personal.phone}`}
+            href={`tel:${personal.phone.replace(/\s/g, '')}`}
             className="group flex items-center gap-4 text-text hover:text-accent transition-colors"
           >
             <span className="text-accent text-xs uppercase tracking-widest w-12">tel</span>
