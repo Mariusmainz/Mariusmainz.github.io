@@ -2,7 +2,6 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect } from 'react'
-import Image from 'next/image'
 import { Project } from '@/data/portfolio'
 
 export default function ProjectDrawer({
@@ -89,20 +88,18 @@ export default function ProjectDrawer({
                     {images.length > 0 && (
                       <div className="flex flex-col gap-4 mb-8">
                         {images.map((m, i) => (
-                          <figure key={i}>
-                            <div className="relative w-full aspect-video overflow-hidden border border-border bg-surface">
-                              <Image
-                                src={m.src}
-                                alt={m.caption ?? ''}
-                                fill
-                                className="object-cover"
-                              />
-                              {m.type === 'press' && (
-                                <div className="absolute top-2 left-2 font-mono text-xs bg-accent text-black px-2 py-0.5 uppercase tracking-widest">
-                                  Press
-                                </div>
-                              )}
-                            </div>
+                          <figure key={i} className="relative">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={m.src}
+                              alt={m.caption ?? ''}
+                              className="w-full h-auto border border-border"
+                            />
+                            {m.type === 'press' && (
+                              <div className="absolute top-2 left-2 font-mono text-xs bg-accent text-black px-2 py-0.5 uppercase tracking-widest">
+                                Press
+                              </div>
+                            )}
                             {m.caption && (
                               <figcaption className="font-mono text-xs text-muted mt-1.5">{m.caption}</figcaption>
                             )}
