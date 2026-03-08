@@ -26,7 +26,7 @@ Technical Skills:
 Embedded Systems, PCB Design,
 Test Automation, FPGA
 Software:
-MATLAB, KiCAD, LTSpice, C,
+MATLAB, KiCAD, Altium, LTSpice, C,
 C++, Robot Framework,
 OMNeT++, APx, Xilinx Vivado,
 Quartus, Cadence, ORFS

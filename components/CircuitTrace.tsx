@@ -1,150 +1,182 @@
 'use client'
 
-import { useScroll, useTransform, motion } from 'framer-motion'
+import { motion } from 'framer-motion'
+import { useEffect, useRef, useState } from 'react'
 
-// Unpredictable PCB trace with varying run lengths and directions
-// ViewBox: 0 0 260 1000
-const TRACE_PATH =
-  'M 30 0 L 30 90 L 200 90 L 200 190 L 80 190 L 80 310 L 210 310 L 210 390 L 50 390 L 50 500 L 175 500 L 175 620 L 35 620 L 35 730 L 195 730 L 195 850 L 65 850 L 65 940 L 185 940 L 185 1000'
+const SECTION_IDS = ['hero', 'about', 'experience', 'projects', 'skills', 'contact'] as const
 
-const VIAS: [number, number][] = [
-  [30, 90], [200, 90],
-  [200, 190], [80, 190],
-  [80, 310], [210, 310],
-  [210, 390], [50, 390],
-  [50, 500], [175, 500],
-  [175, 620], [35, 620],
-  [35, 730], [195, 730],
-  [195, 850], [65, 850],
-  [65, 940], [185, 940],
-]
+interface SectionBounds { top: number; mid: number; bottom: number }
 
-// Inductor coil on horizontal segment y=90, x=100→145
-// 4 upward bumps, each 10px wide
-const INDUCTOR_PATH = 'M 100 90 Q 105 82 110 90 Q 115 82 120 90 Q 125 82 130 90 Q 135 82 140 90'
+function buildTrace(w: number, h: number, secs: Partial<Record<string, SectionBounds>>) {
+  const lx = 48
+  const rx = w - 48
+  const nodes: { id: string; x: number; y: number }[] = []
+  const parts: string[] = [`M ${lx} 0`]
 
-// Resistor rectangle on horizontal segment y=390, x=118→158
-// rect drawn as path so we can animate it
-const RESISTOR_PATH = 'M 118 384 L 158 384 L 158 396 L 118 396 Z'
+  SECTION_IDS.forEach((id, i) => {
+    const isLeft = i % 2 === 0
+    const x = isLeft ? lx : rx
+    const sec = secs[id]
 
-// Capacitor plates on vertical segment x=175, y=548→572
-// Two horizontal lines with a gap
-const CAP_PLATE_TOP = 'M 163 548 L 187 548'
-const CAP_PLATE_BOT = 'M 163 572 L 187 572'
+    if (i > 0) {
+      const prev = secs[SECTION_IDS[i - 1]]
+      const crossY = sec && prev
+        ? Math.round((prev.bottom + sec.top) / 2)
+        : Math.round(h * ([0.22, 0.38, 0.54, 0.69, 0.83][i - 1] ?? 0.5))
+      const fromX = (i - 1) % 2 === 0 ? lx : rx
+      parts.push(`L ${fromX} ${crossY}`, `L ${x} ${crossY}`)
+    }
+
+    const nodeY = sec
+      ? Math.round(sec.mid)
+      : Math.round(h * [0.15, 0.30, 0.46, 0.62, 0.77, 0.91][i])
+    parts.push(`L ${x} ${nodeY}`)
+    nodes.push({ id, x, y: nodeY })
+  })
+
+  const lastX = (SECTION_IDS.length - 1) % 2 === 0 ? lx : rx
+  parts.push(`L ${lastX} ${h}`)
+
+  return { path: parts.join(' '), nodes }
+}
 
 export default function CircuitTrace() {
-  const { scrollYProgress } = useScroll()
-  const pathLength = useTransform(scrollYProgress, [0, 0.95], [0, 1])
-  const opacity = useTransform(scrollYProgress, [0, 0.03], [0, 1])
+  const svgRef = useRef<SVGSVGElement>(null)
+  const [dims, setDims] = useState<{ w: number; h: number } | null>(null)
+  const [sections, setSections] = useState<Partial<Record<string, SectionBounds>>>({})
+  const [activeSection, setActiveSection] = useState<string | null>(null)
+
+  useEffect(() => {
+    const measure = () => {
+      const svg = svgRef.current
+      if (!svg) return
+      const w = svg.clientWidth
+      const h = svg.clientHeight
+      if (!w || !h) return
+
+      const newSections: Partial<Record<string, SectionBounds>> = {}
+      SECTION_IDS.forEach(id => {
+        const el = document.getElementById(id)
+        if (!el) return
+        const rect = el.getBoundingClientRect()
+        newSections[id] = {
+          top:    rect.top + window.scrollY,
+          mid:    rect.top + window.scrollY + rect.height / 2,
+          bottom: rect.top + window.scrollY + rect.height,
+        }
+      })
+
+      setDims({ w, h })
+      setSections(newSections)
+    }
+
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [])
+
+  useEffect(() => {
+    const observers: IntersectionObserver[] = []
+    SECTION_IDS.forEach(id => {
+      const el = document.getElementById(id)
+      if (!el) return
+      const obs = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) setActiveSection(id) },
+        { threshold: 0.25 },
+      )
+      obs.observe(el)
+      observers.push(obs)
+    })
+    return () => observers.forEach(o => o.disconnect())
+  }, [])
+
+  const { path: tracePath, nodes } = dims
+    ? buildTrace(dims.w, dims.h, sections)
+    : { path: '', nodes: [] as { id: string; x: number; y: number }[] }
 
   return (
     <div
-      className="fixed left-0 top-0 bottom-0 hidden lg:block pointer-events-none z-0"
-      style={{ width: '260px' }}
+      className="absolute inset-0 pointer-events-none hidden xl:block"
+      style={{ zIndex: -1 }}
       aria-hidden="true"
     >
       <svg
-        viewBox="0 0 260 1000"
-        className="h-full w-full"
-        preserveAspectRatio="xMidYMid meet"
+        ref={svgRef}
+        viewBox={dims ? `0 0 ${dims.w} ${dims.h}` : undefined}
+        className="w-full h-full"
       >
-        <defs>
-          <filter id="trace-glow" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
+        {dims && tracePath && (
+          <>
+            <defs>
+              <filter id="tc-glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              <filter id="tc-pulse" x="-200%" y="-200%" width="500%" height="500%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              <filter id="tc-node" x="-300%" y="-300%" width="700%" height="700%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
 
-        {/* Ghost vias — faintly visible before scroll */}
-        {VIAS.map(([cx, cy], i) => (
-          <circle
-            key={`ghost-${i}`}
-            cx={cx}
-            cy={cy}
-            r={4}
-            fill="none"
-            stroke="#00d4ff"
-            strokeWidth="1"
-            opacity={0.06}
-          />
-        ))}
+            {/* Static trace — fully drawn, always visible */}
+            <path
+              d={tracePath}
+              fill="none"
+              stroke="#00d4ff"
+              strokeWidth="1.5"
+              opacity={0.2}
+              strokeLinecap="square"
+              strokeLinejoin="miter"
+              filter="url(#tc-glow)"
+            />
 
-        {/* Main trace */}
-        <motion.path
-          d={TRACE_PATH}
-          fill="none"
-          stroke="#00d4ff"
-          strokeWidth="1.5"
-          strokeLinecap="square"
-          strokeLinejoin="miter"
-          style={{ pathLength, opacity }}
-          filter="url(#trace-glow)"
-        />
+            {/* Clocked pulse — bright beam sweeps the full circuit once per cycle */}
+            <circle r="4" fill="#00d4ff" filter="url(#tc-pulse)">
+              <animateMotion
+                path={tracePath}
+                dur="12s"
+                repeatCount="indefinite"
+                calcMode="linear"
+              />
+            </circle>
 
-        {/* ── Inductor (coil bumps on y=90 horizontal) ── */}
-        {/* Mask straight trace underneath */}
-        <motion.rect x={98} y={86} width={44} height={8} fill="#0a0a0a" style={{ opacity }} />
-        <motion.path
-          d={INDUCTOR_PATH}
-          fill="none"
-          stroke="#00d4ff"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          style={{ opacity }}
-          filter="url(#trace-glow)"
-        />
-
-        {/* ── Resistor (IEC rectangle on y=390 horizontal) ── */}
-        {/* Mask trace inside rect */}
-        <motion.rect x={120} y={386} width={36} height={8} fill="#0a0a0a" style={{ opacity }} />
-        <motion.path
-          d={RESISTOR_PATH}
-          fill="none"
-          stroke="#00d4ff"
-          strokeWidth="1.5"
-          strokeLinejoin="miter"
-          style={{ opacity }}
-          filter="url(#trace-glow)"
-        />
-
-        {/* ── Capacitor (plates on x=175 vertical) ── */}
-        {/* Mask trace between plates */}
-        <motion.rect x={172} y={548} width={6} height={25} fill="#0a0a0a" style={{ opacity }} />
-        <motion.path
-          d={CAP_PLATE_TOP}
-          stroke="#00d4ff"
-          strokeWidth="2"
-          strokeLinecap="square"
-          style={{ opacity }}
-          filter="url(#trace-glow)"
-        />
-        <motion.path
-          d={CAP_PLATE_BOT}
-          stroke="#00d4ff"
-          strokeWidth="2"
-          strokeLinecap="square"
-          style={{ opacity }}
-          filter="url(#trace-glow)"
-        />
-
-        {/* Lit vias — appear as trace is drawn */}
-        {VIAS.map(([cx, cy], i) => (
-          <motion.circle
-            key={`lit-${i}`}
-            cx={cx}
-            cy={cy}
-            r={4}
-            fill="#00d4ff"
-            fillOpacity={0.25}
-            stroke="#00d4ff"
-            strokeWidth="1.5"
-            style={{ opacity }}
-            filter="url(#trace-glow)"
-          />
-        ))}
+            {/* Section nodes — dim by default, brighten when section is in view */}
+            {nodes.map(node => {
+              const isActive = activeSection === node.id
+              return (
+                <motion.circle
+                  key={node.id}
+                  cx={node.x}
+                  cy={node.y}
+                  fill="#00d4ff"
+                  stroke="#00d4ff"
+                  strokeWidth="1.5"
+                  animate={{
+                    r:            isActive ? 6 : 4,
+                    fillOpacity:  isActive ? 0.55 : 0.12,
+                    strokeOpacity: isActive ? 0.9 : 0.35,
+                  }}
+                  initial={{ r: 4, fillOpacity: 0.12, strokeOpacity: 0.35 }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                  filter={isActive ? 'url(#tc-node)' : 'url(#tc-glow)'}
+                />
+              )
+            })}
+          </>
+        )}
       </svg>
     </div>
   )

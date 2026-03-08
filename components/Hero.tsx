@@ -8,7 +8,7 @@ export default function Hero() {
     document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <section id="hero" className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background dots */}
       <div
         className="absolute inset-0 opacity-20"
