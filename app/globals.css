@@ -15,7 +15,6 @@
 }
 
 html {
-  background-color: var(--bg);
   color: var(--text);
   scrollbar-width: thin;
   scrollbar-color: #00d4ff #0a0a0a;

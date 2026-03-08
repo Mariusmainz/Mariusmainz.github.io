@@ -1,6 +1,5 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 
 const SECTION_IDS = ['hero', 'about', 'experience', 'projects', 'skills', 'contact'] as const
@@ -29,7 +28,7 @@ function buildTrace(w: number, h: number, secs: Partial<Record<string, SectionBo
 
     const nodeY = sec
       ? Math.round(sec.mid)
-      : Math.round(h * [0.15, 0.30, 0.46, 0.62, 0.77, 0.91][i])
+      : Math.round(h * ([0.15, 0.30, 0.46, 0.62, 0.77, 0.91][i] ?? 0.5))
     parts.push(`L ${x} ${nodeY}`)
     nodes.push({ id, x, y: nodeY })
   })
@@ -95,9 +94,10 @@ export default function CircuitTrace() {
     : { path: '', nodes: [] as { id: string; x: number; y: number }[] }
 
   return (
+    // Outside main (z-10), so main's entire stacking context renders above this
     <div
-      className="absolute inset-0 pointer-events-none hidden xl:block"
-      style={{ zIndex: -1 }}
+      className="absolute inset-0 pointer-events-none z-0 hidden xl:block"
+      style={{ willChange: 'transform' }}
       aria-hidden="true"
     >
       <svg
@@ -107,71 +107,34 @@ export default function CircuitTrace() {
       >
         {dims && tracePath && (
           <>
-            <defs>
-              <filter id="tc-glow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-              <filter id="tc-pulse" x="-200%" y="-200%" width="500%" height="500%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-              <filter id="tc-node" x="-300%" y="-300%" width="700%" height="700%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-
-            {/* Static trace — fully drawn, always visible */}
+            {/* Static trace */}
             <path
               d={tracePath}
               fill="none"
               stroke="#00d4ff"
               strokeWidth="1.5"
-              opacity={0.2}
+              opacity={0.15}
               strokeLinecap="square"
               strokeLinejoin="miter"
-              filter="url(#tc-glow)"
             />
 
-            {/* Clocked pulse — bright beam sweeps the full circuit once per cycle */}
-            <circle r="4" fill="#00d4ff" filter="url(#tc-pulse)">
-              <animateMotion
-                path={tracePath}
-                dur="12s"
-                repeatCount="indefinite"
-                calcMode="linear"
-              />
-            </circle>
-
-            {/* Section nodes — dim by default, brighten when section is in view */}
-            {nodes.map(node => {
+            {/* Section nodes */}
+            {nodes.filter(node => node.id !== 'experience').map(node => {
               const isActive = activeSection === node.id
               return (
-                <motion.circle
+                <circle
                   key={node.id}
                   cx={node.x}
                   cy={node.y}
+                  r={isActive ? 5 : 3.5}
                   fill="#00d4ff"
                   stroke="#00d4ff"
                   strokeWidth="1.5"
-                  animate={{
-                    r:            isActive ? 6 : 4,
-                    fillOpacity:  isActive ? 0.55 : 0.12,
-                    strokeOpacity: isActive ? 0.9 : 0.35,
+                  style={{
+                    fillOpacity:   isActive ? 0.5  : 0.1,
+                    strokeOpacity: isActive ? 0.85 : 0.3,
+                    transition: 'fill-opacity 0.4s ease, stroke-opacity 0.4s ease',
                   }}
-                  initial={{ r: 4, fillOpacity: 0.12, strokeOpacity: 0.35 }}
-                  transition={{ duration: 0.5, ease: 'easeOut' }}
-                  filter={isActive ? 'url(#tc-node)' : 'url(#tc-glow)'}
                 />
               )
             })}

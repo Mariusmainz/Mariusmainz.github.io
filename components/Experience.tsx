@@ -75,7 +75,7 @@ function TimelineItem({
 
 export default function Experience() {
   return (
-    <section id="experience" className="py-32 px-6 max-w-5xl mx-auto">
+    <section id="experience" className="py-32 px-6 max-w-5xl mx-auto isolate">
       <FadeIn>
         <p className="font-mono text-accent text-xs tracking-[0.3em] uppercase mb-2">02 /</p>
         <h2 className="text-3xl md:text-4xl font-bold text-text mb-16">Experience</h2>

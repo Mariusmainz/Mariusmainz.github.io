@@ -9,16 +9,8 @@ export default function Hero() {
 
   return (
     <section id="hero" className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background dots */}
-      <div
-        className="absolute inset-0 opacity-20"
-        style={{
-          backgroundImage: `radial-gradient(circle, #00d4ff 1px, transparent 1px)`,
-          backgroundSize: '40px 40px',
-        }}
-      />
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-bg/0 via-bg/50 to-bg" />
+      {/* Gradient overlay — darkens edges so hero text is legible over the dot grid */}
+      <div className="absolute inset-0 bg-gradient-to-b from-bg/30 via-transparent to-bg/60" />
 
       <div className="relative z-10 text-center px-6 max-w-3xl mx-auto">
         <motion.p

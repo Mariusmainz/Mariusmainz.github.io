@@ -43,7 +43,7 @@ export interface Project {
   shortDescription: string
   tags: string[]
   detail: string
-  type: 'professional' | 'personal'
+  type: 'professional' | 'personal' | 'academic'
   media?: ProjectMedia[]
 }
 
@@ -205,7 +205,7 @@ export const projects: Project[] = [
     shortDescription: 'Dynamic DSP filters for loudspeaker protection.',
     tags: ['DSP', 'MATLAB', 'Audio', 'Thesis'],
     detail: '"Protection Algorithms for Loudspeakers": Investigation of dynamic filters for mechanical and thermal protection of loudspeakers using DSP. Submitted as part of the BSc in Electrical Engineering at DTU.\n\nAbstract: This paper investigates a method for protecting a loudspeaker in an enclosure from thermal damage and mechanical excursion limits, that could cause harmonic distortion from nonlinearities or even mechanical damage, using an algorithm based on digital signal processing. Thermal protection is only briefly covered in this paper due to resource constraints, while mechanical protection is investigated in further depth. The algorithm is a feedforward system based on a linear loudspeaker model that neglects losses from the inductor. Measurements of the output voltage of an audio amplifier show that, with the algorithm implemented, the output voltage is limited with the expected characteristics but slightly underdamped. Other measurements of a loudspeaker show that the amount of total harmonic distortion is reduced in exposed frequency bands when applying the algorithm. In order to obtain a desired response, different tuning of parameters within the algorithm is discussed as well as the advantages and limitations of the algorithm.',
-    type: 'personal',
+    type: 'academic',
     media: [
       { type: 'pdf', src: '/Resources/projects/loudspeaker-protection.pdf', label: 'Read Thesis' },
     ],
@@ -213,10 +213,10 @@ export const projects: Project[] = [
   {
     id: 'drone',
     title: 'Autonomous Drone Navigation',
-    shortDescription: 'DTU project on autonomous drone path planning and control.',
-    tags: ['Embedded', 'Control Systems', 'DTU', 'Autonomous'],
-    detail: 'DTU course project on autonomous drone navigation, covering path planning, sensor fusion, and control system design.',
-    type: 'personal',
+    shortDescription: 'Designed and built a self-stabilizing quadcopter from scratch — PCB, firmware, and CAD.',
+    tags: ['Embedded', 'PCB Design', 'MATLAB', 'Control Systems', 'CAD'],
+    detail: 'Designed and built a fully functioning quadcopter UAV from the ground up. Developed a custom PCB built around a Teensy 4.0 MCU and MPU9250 IMU, controlling four brushless motors via ESCs. Implemented the open-source dRehmFlight firmware for PID-based roll, pitch, and yaw stabilization. Modelled and simulated the system in MATLAB/Simscape to tune the controllers. The frame was parametrically CAD-modelled and 3D-printed in carbon fiber-infused PETG, resulting in a 1.25 kg platform with 3.5 kg of total motor thrust.',
+    type: 'academic',
     media: [
       { type: 'pdf', src: '/Resources/projects/drone-poster.pdf', label: 'View Poster' },
     ],
@@ -227,7 +227,7 @@ export const projects: Project[] = [
     shortDescription: 'DTU group project: automated object sorting system.',
     tags: ['Embedded', 'Mechanical', 'DTU', 'Automation'],
     detail: 'Group project at DTU designing and building an automated sorting machine. Covers mechanical design, embedded control, and systems integration.',
-    type: 'personal',
+    type: 'academic',
     media: [
       { type: 'pdf', src: '/Resources/projects/sorting-machine.pdf', label: 'View Report' },
     ],
