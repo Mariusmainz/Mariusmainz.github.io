@@ -44,11 +44,21 @@ export default function Nav() {
           <button
             key={s}
             onClick={() => scrollTo(s.toLowerCase())}
-            className={`font-mono text-xs uppercase tracking-widest transition-colors ${
+            className={`relative font-mono text-xs uppercase tracking-widest transition-colors ${
               active === s.toLowerCase() ? 'text-accent' : 'text-muted hover:text-text'
             }`}
           >
             {s}
+            {active === s.toLowerCase() && (
+              <motion.span
+                layoutId="nav-underline"
+                className="absolute -bottom-1 left-0 right-0 h-px bg-accent"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                style={{ originX: 0 }}
+              />
+            )}
           </button>
         ))}
       </div>
