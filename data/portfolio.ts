@@ -235,7 +235,7 @@ export const projects: Project[] = [
 ]
 
 export const skills: Skills = {
-  'Embedded & Hardware': ['Embedded Systems', 'PCB Design', 'FPGA', 'Circuit Analysis', 'Analog IC Design'],
-  'Software & Tools': ['Python', 'C', 'C++', 'MATLAB', 'Robot Framework', 'Test Automation'],
-  'EDA & CAD': ['Cadence', 'KiCAD', 'LTSpice', 'Xilinx Vivado', 'Quartus', 'ORFS', 'APx', 'OMNeT++'],
+  'Embedded & Hardware': ['Embedded Systems', 'PCB Design', 'FPGA', 'Circuit Analysis', 'Analog IC Design', 'DSP', 'Motor Control', 'I2C / SPI / UART'],
+  'Software & Tools': ['Python', 'C', 'C++', 'Go', 'MATLAB', 'Vue', 'SKILL', 'Verilog / VHDL', 'Robot Framework', 'Test Automation', 'Git', 'Linux / Bash'],
+  'EDA & CAD': ['Cadence', 'Altium Designer', 'KiCAD', 'LTSpice', 'Xilinx Vivado', 'Quartus', 'ORFS', 'APx', 'OMNeT++'],
 }
