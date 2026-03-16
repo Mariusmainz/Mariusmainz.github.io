@@ -21,13 +21,24 @@ export default function Projects() {
             <button
               type="button"
               onClick={() => setSelected(project)}
-              className="w-full text-left p-5 border border-border bg-surface hover:border-accent/50 transition-all group"
+              className="w-full text-left p-5 border border-border bg-surface/80 backdrop-blur-sm hover:border-accent/50 hover:-translate-y-0.5 transition-all duration-200 group"
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 24px rgba(56,189,248,0.10)'
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none'
+              }}
             >
               <div className="flex items-start justify-between mb-3">
                 <span className="font-mono text-accent text-xs uppercase tracking-widest">
                   {project.type}
                 </span>
-                <span aria-hidden="true" className="text-muted group-hover:text-accent transition-colors text-sm">↗</span>
+                <span
+                  aria-hidden="true"
+                  className="text-muted group-hover:text-accent group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform text-sm"
+                >
+                  ↗
+                </span>
               </div>
               <h3 className="font-semibold text-text group-hover:text-accent transition-colors mb-2">
                 {project.title}
