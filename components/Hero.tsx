@@ -12,6 +12,17 @@ export default function Hero() {
       {/* Gradient overlay — darkens edges so hero text is legible over the dot grid */}
       <div className="absolute inset-0 bg-gradient-to-b from-bg/30 via-transparent to-bg/60" />
 
+      {/* Radial pulse behind name */}
+      <motion.div
+        animate={{ opacity: [0.04, 0.08, 0.04], scale: [1, 1.15, 1] }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(400px circle at 50% 50%, rgba(56,189,248,0.12), transparent)',
+        }}
+        aria-hidden="true"
+      />
+
       <div className="relative z-10 text-center px-6 max-w-3xl mx-auto">
         <motion.p
           initial={{ opacity: 0, y: 20 }}
