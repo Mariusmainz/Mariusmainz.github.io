@@ -101,20 +101,12 @@ export default function CircuitTrace() {
     let raf  = 0
     const dots = initDots()
 
-    let lastScrollY = window.scrollY
-    let velocity    = 0
     let cssW = window.innerWidth
     let cssH = window.innerHeight
 
     let mouseX = -9999
     let mouseY = -9999
 
-    const onScroll    = () => {
-      const sy = window.scrollY
-      const raw = Math.max(-200, Math.min(200, sy - lastScrollY))
-      velocity    = velocity + (raw - velocity) * 0.12
-      lastScrollY = sy
-    }
     const onMouseMove = (e: MouseEvent) => { mouseX = e.clientX; mouseY = e.clientY }
     const onMouseOut  = () => { mouseX = -9999; mouseY = -9999 }
 
@@ -133,9 +125,6 @@ export default function CircuitTrace() {
 
     const draw = () => {
       if (document.hidden) { raf = requestAnimationFrame(draw); return }
-
-      // Scroll velocity decays when not scrolling
-      velocity *= 0.92
 
       ctx.clearRect(0, 0, cssW, cssH)
 
@@ -192,9 +181,6 @@ export default function CircuitTrace() {
         dot.vx *= damp
         dot.vy *= damp
 
-        // Subtle scroll push — dots drift with the page momentum
-        dot.vy += velocity * 0.006
-
         // Gentle spring back to resting position
         dot.vx -= dot.driftX * spring
         dot.vy -= dot.driftY * spring
@@ -249,7 +235,6 @@ export default function CircuitTrace() {
     }
 
     rebuild()
-    window.addEventListener('scroll',    onScroll,    { passive: true })
     window.addEventListener('mousemove', onMouseMove, { passive: true })
     window.addEventListener('mouseout',  onMouseOut,  { passive: true })
 
@@ -258,7 +243,6 @@ export default function CircuitTrace() {
 
     return () => {
       cancelAnimationFrame(raf)
-      window.removeEventListener('scroll',    onScroll)
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseout',  onMouseOut)
       ro.disconnect()
