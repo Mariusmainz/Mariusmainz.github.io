@@ -26,7 +26,7 @@ export default function Skills() {
                     viewport={{ once: true }}
                     transition={{ delay: ci * 0.1 + ti * 0.04, duration: 0.3 }}
                   >
-                    <span className="font-mono text-sm px-4 py-2 border border-border text-text hover:border-accent2/60 hover:text-accent2 hover:bg-accent/10 hover:scale-[1.03] transition-all duration-150 block cursor-default">
+                    <span className="font-mono text-sm px-4 py-2 border border-border text-text hover:border-accent2/60 hover:text-accent2 hover:bg-accent2/10 hover:scale-[1.03] transition-all duration-150 block cursor-default">
                       {tag}
                     </span>
                   </motion.li>
