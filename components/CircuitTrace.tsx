@@ -113,7 +113,7 @@ export default function CircuitTrace() {
               fill="none"
               stroke="#00d4ff"
               strokeWidth="1.5"
-              opacity={0.15}
+              opacity={0.20}
               strokeLinecap="square"
               strokeLinejoin="miter"
             />
@@ -126,14 +126,15 @@ export default function CircuitTrace() {
                   key={node.id}
                   cx={node.x}
                   cy={node.y}
-                  r={isActive ? 5 : 3.5}
+                  r={isActive ? 6 : 3.5}
                   fill="#00d4ff"
                   stroke="#00d4ff"
                   strokeWidth="1.5"
                   style={{
-                    fillOpacity:   isActive ? 0.5  : 0.1,
-                    strokeOpacity: isActive ? 0.85 : 0.3,
-                    transition: 'fill-opacity 0.4s ease, stroke-opacity 0.4s ease',
+                    fillOpacity:   isActive ? 0.55  : 0.12,
+                    strokeOpacity: isActive ? 0.90  : 0.35,
+                    filter:        isActive ? 'drop-shadow(0 0 6px rgba(56,189,248,0.6))' : 'none',
+                    transition: 'fill-opacity 0.4s ease, stroke-opacity 0.4s ease, filter 0.4s ease',
                   }}
                 />
               )
