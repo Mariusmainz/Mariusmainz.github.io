@@ -142,13 +142,15 @@ export default function CircuitTrace() {
     let velocity       = 0
     let lastScrollTime = 0
     let maxScroll      = Math.max(1, document.body.scrollHeight - window.innerHeight)
+    let cssW = window.innerWidth
+    let cssH = window.innerHeight
 
     const onScroll = () => { lastScrollTime = Date.now() }
 
     const rebuild = () => {
       const dpr  = window.devicePixelRatio || 1
-      const cssW = window.innerWidth
-      const cssH = window.innerHeight
+      cssW = window.innerWidth
+      cssH = window.innerHeight
       canvas.width  = cssW * dpr
       canvas.height = cssH * dpr
       canvas.style.width  = `${cssW}px`
@@ -181,7 +183,7 @@ export default function CircuitTrace() {
 
       if (!frozen) {
         const currentScrollY = window.scrollY
-        const rawVelocity    = currentScrollY - lastScrollY
+        const rawVelocity    = Math.max(-200, Math.min(200, currentScrollY - lastScrollY))
         velocity             = velocity + (rawVelocity - velocity) * 0.15
         lastScrollY          = currentScrollY
 
@@ -202,7 +204,7 @@ export default function CircuitTrace() {
         velocity = 0
       }
 
-      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight)
+      ctx.clearRect(0, 0, cssW, cssH)
 
       const screenY = cloudY - window.scrollY
 
