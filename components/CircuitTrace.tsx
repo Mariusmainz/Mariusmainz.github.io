@@ -59,16 +59,30 @@ function buildPathData(vw: number): PathData {
     const top    = rect.top    + window.scrollY
     const bottom = rect.bottom + window.scrollY
     sectionBounds.push({ top, bottom })
-    // During section: cloud retreats to alternating edges
-    const edgeX = i % 2 === 0 ? vw * 0.10 : vw * 0.90
-    waypoints.push([edgeX, top + (bottom - top) * 0.5])
-    // After section: cloud blooms to center in the gap
+
+    // During section: cloud retreats to alternating edges with varied depth
+    const edgeXFrac = i % 2 === 0
+      ? 0.08 + Math.abs(Math.sin(i * 1.7)) * 0.09   // 8–17% from left
+      : 0.92 - Math.abs(Math.sin(i * 1.7)) * 0.09   // 83–92% from left
+    waypoints.push([vw * edgeXFrac, top + (bottom - top) * 0.5])
+
+    // Between sections: multiple waypoints with sinusoidal x variation → wavy path
     const nextEl = els[i + 1]
     if (nextEl) {
       const nRect   = nextEl.getBoundingClientRect()
       const nextTop = nRect.top + window.scrollY
-      if (nextTop > bottom + 20) {
-        waypoints.push([vw * 0.5, bottom + (nextTop - bottom) * 0.5])
+      const gapLen  = nextTop - bottom
+      if (gapLen > 20) {
+        // First curve point — offset left or right
+        waypoints.push([
+          vw * (0.5 + Math.sin(i * 2.3 + 1.0) * 0.28),
+          bottom + gapLen * 0.35,
+        ])
+        // Second curve point — opposite side
+        waypoints.push([
+          vw * (0.5 + Math.sin(i * 2.3 + 2.8) * 0.28),
+          bottom + gapLen * 0.70,
+        ])
       }
     }
   })
@@ -78,10 +92,14 @@ function buildPathData(vw: number): PathData {
 }
 
 interface Dot {
-  angle:  number   // fixed angle from cloud center
+  angle:  number   // base angle from cloud center
   dist:   number   // 0–1 fraction of cloudRadius
   radius: number   // dot radius in px
-  phase:  number   // per-dot offset for scrollY-driven pulse
+  phase:  number   // per-dot phase for time-based pulse
+  driftX: number   // current spark drift offset x
+  driftY: number   // current spark drift offset y
+  vx:     number   // drift velocity x
+  vy:     number   // drift velocity y
 }
 
 function initDots(): Dot[] {
@@ -90,6 +108,10 @@ function initDots(): Dot[] {
     dist:   Math.random(),
     radius: 1.5 + Math.random() * 1.0,
     phase:  Math.random() * Math.PI * 2,
+    driftX: 0,
+    driftY: 0,
+    vx:     (Math.random() - 0.5) * 0.4,
+    vy:     (Math.random() - 0.5) * 0.4,
   }))
 }
 
@@ -173,7 +195,6 @@ export default function CircuitTrace() {
       pathData.sectionBounds.some(b => pageY >= b.top && pageY <= b.bottom)
 
     const draw = () => {
-      // Skip work on backgrounded tabs
       if (document.hidden) {
         raf = requestAnimationFrame(draw)
         return
@@ -190,14 +211,13 @@ export default function CircuitTrace() {
         const progress = Math.min(1, currentScrollY / maxScroll)
         const [tx, ty] = samplePath(pathData.waypoints, progress)
 
-        // Lerp cloud center toward path target
         cloudX += (tx - cloudX) * 0.08
         cloudY += (ty - cloudY) * 0.08
 
         // Zone detection: between sections = bloom, inside section = contract
-        const inSection      = isInSection(cloudY)
-        const targetRadius   = inSection ? CONFIG.cloudRadius * 0.5  : CONFIG.cloudRadius * 1.6
-        const targetOpacity  = inSection ? CONFIG.opacity    * 0.25  : CONFIG.opacity
+        const inSection     = isInSection(cloudY)
+        const targetRadius  = inSection ? CONFIG.cloudRadius * 0.5 : CONFIG.cloudRadius * 1.6
+        const targetOpacity = inSection ? CONFIG.opacity * 0.25    : CONFIG.opacity
         displayRadius  += (targetRadius  - displayRadius)  * 0.06
         displayOpacity += (targetOpacity - displayOpacity) * 0.06
       } else {
@@ -206,17 +226,37 @@ export default function CircuitTrace() {
 
       ctx.clearRect(0, 0, cssW, cssH)
 
+      const now     = performance.now()
       const screenY = cloudY - window.scrollY
+      // Max drift radius scales with cloud size so sparks stay proportional
+      const maxDrift = displayRadius * 0.45
+      // Velocity stretch: elongate cloud in scroll direction
+      const stretch  = 1 + Math.min(Math.abs(velocity) * 0.012, 0.5)
 
       dots.forEach(dot => {
-        // Pulse: sin driven by scrollY so it only oscillates while scrolling
-        const pulse   = 1 + 0.2 * Math.sin(window.scrollY * 0.01 + dot.phase)
-        // Stretch: elongate cloud in scroll direction when scrolling fast
-        const stretch = 1 + Math.min(Math.abs(velocity) * 0.012, 0.5)
+        // --- Spark drift: random walk with slight upward bias + spring ---
+        dot.vx += (Math.random() - 0.5) * 0.9
+        dot.vy += (Math.random() - 0.5) * 0.9 - 0.12   // upward bias
+        dot.vx *= 0.90
+        dot.vy *= 0.90
+        // Soft spring back toward (0,0) so sparks don't escape the cloud
+        dot.vx -= dot.driftX * 0.018
+        dot.vy -= dot.driftY * 0.018
+        dot.driftX += dot.vx
+        dot.driftY += dot.vy
+        // Clamp to max drift radius
+        const driftMag = Math.sqrt(dot.driftX * dot.driftX + dot.driftY * dot.driftY)
+        if (driftMag > maxDrift) {
+          dot.driftX *= maxDrift / driftMag
+          dot.driftY *= maxDrift / driftMag
+        }
+
+        // Time-based pulse — always runs, even when frozen
+        const pulse = 1 + 0.25 * Math.sin(now * 0.0008 + dot.phase)
 
         const r  = dot.dist * displayRadius * pulse
-        const dx = Math.cos(dot.angle) * r
-        const dy = Math.sin(dot.angle) * r * stretch
+        const dx = Math.cos(dot.angle) * r + dot.driftX
+        const dy = Math.sin(dot.angle) * r * stretch + dot.driftY
         const x  = cloudX  + dx
         const y  = screenY + dy
 
