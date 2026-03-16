@@ -18,9 +18,9 @@ export default function FadeIn({
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 30 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.6, delay }}
+      initial={{ opacity: 0, y: 40, scale: 0.97 }}
+      animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
+      transition={{ duration: 0.65, delay, ease: 'easeOut' }}
       className={className}
     >
       {children}
