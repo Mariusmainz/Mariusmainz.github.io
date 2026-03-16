@@ -116,6 +116,8 @@ export default function CircuitTrace() {
       const now = performance.now()
       // Slow spatial wave — period ~63 s, sweeps across the screen
       const wt = now * 0.00010
+      // Edge zone: opacity boosts toward the frame boundary
+      const edgeMargin = Math.min(cssW, cssH) * 0.40
 
       dots.forEach(dot => {
         const homeX = dot.homeXF * cssW
@@ -133,13 +135,15 @@ export default function CircuitTrace() {
           dot.driftY += dot.vy
           dot.sparkAge++
 
-          const t = 1 - dot.sparkAge / MAX_SPARK_AGE
+          const fadeT  = 1 - dot.sparkAge / MAX_SPARK_AGE
+          const sx     = homeX + dot.driftX
+          const sy     = homeY + dot.driftY
+          const edgeT  = 1 - Math.min(1, Math.max(0, Math.min(sx, cssW - sx, sy, cssH - sy)) / edgeMargin)
+          const edgeMul = 1 + edgeT * edgeT * 0.9
           drawDot(
-            ctx,
-            homeX + dot.driftX,
-            homeY + dot.driftY,
+            ctx, sx, sy,
             Math.max(0.4, dotRadius * 0.45),
-            CONFIG.opacity * dot.alpha * 0.55 * t,
+            Math.min(1, CONFIG.opacity * dot.alpha * 0.55 * fadeT * edgeMul),
           )
 
           if (dot.sparkAge >= MAX_SPARK_AGE) {
@@ -208,13 +212,11 @@ export default function CircuitTrace() {
         const windX   = Math.sin(wt + homeX * 0.0030) * windAmp
         const windY   = Math.cos(wt * 0.71 + homeY * 0.0028) * windAmp * 0.5
 
-        drawDot(
-          ctx,
-          homeX + dot.driftX + windX,
-          homeY + dot.driftY + windY,
-          dotRadius,
-          CONFIG.opacity * dot.alpha,
-        )
+        const x      = homeX + dot.driftX + windX
+        const y      = homeY + dot.driftY + windY
+        const edgeT  = 1 - Math.min(1, Math.max(0, Math.min(x, cssW - x, y, cssH - y)) / edgeMargin)
+        const edgeMul = 1 + edgeT * edgeT * 0.9
+        drawDot(ctx, x, y, dotRadius, Math.min(1, CONFIG.opacity * dot.alpha * edgeMul))
       })
 
       raf = requestAnimationFrame(draw)
