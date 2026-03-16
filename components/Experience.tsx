@@ -26,7 +26,7 @@ function TimelineItem({
     <FadeIn delay={index * 0.08}>
       <div className="relative pl-8 pb-10 border-l border-border">
         {/* Dot */}
-        <div className="absolute left-[-5px] top-1 w-2.5 h-2.5 rounded-full border-2 border-amber-400 bg-bg" />
+        <div className="absolute left-[-5px] top-1 w-2.5 h-2.5 rounded-full border-2 border-accent2 bg-bg" />
 
         <button
           type="button"
@@ -77,7 +77,7 @@ export default function Experience() {
   return (
     <section id="experience" className="py-32 px-6 max-w-5xl mx-auto isolate">
       <FadeIn>
-        <p className="font-mono text-amber-400 text-xs tracking-[0.3em] uppercase mb-2">02 /</p>
+        <p className="font-mono text-accent2 text-xs tracking-[0.3em] uppercase mb-2">02 /</p>
         <h2 className="text-3xl md:text-4xl font-bold text-text mb-16">Experience</h2>
       </FadeIn>
 

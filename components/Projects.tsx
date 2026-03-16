@@ -11,7 +11,7 @@ export default function Projects() {
   return (
     <section id="projects" className="py-32 px-6 max-w-5xl mx-auto">
       <FadeIn>
-        <p className="font-mono text-amber-400 text-xs tracking-[0.3em] uppercase mb-2">03 /</p>
+        <p className="font-mono text-accent2 text-xs tracking-[0.3em] uppercase mb-2">03 /</p>
         <h2 className="text-3xl md:text-4xl font-bold text-text mb-16">Projects</h2>
       </FadeIn>
 
