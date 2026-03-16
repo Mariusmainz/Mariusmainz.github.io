@@ -3,8 +3,9 @@
 import { useEffect, useRef } from 'react'
 
 export const CONFIG = {
-  dotCount: 320,
-  opacity:  0.60,
+  dotCount:     320,
+  edgeCount:    140,   // extra dots seeded along the 4 edges
+  opacity:      0.60,
 }
 
 const MAX_SPARK_AGE   = 160
@@ -26,28 +27,53 @@ interface Dot {
   sparkAge:  number
 }
 
-function initDots(): Dot[] {
-  return Array.from({ length: CONFIG.dotCount }, () => {
-    const free = Math.random() < 0.28   // ~28% are free-roaming
-    return {
-      homeXF:    Math.random(),
-      homeYF:    Math.random(),
-      driftX:    0,
-      driftY:    0,
-      vx:        (Math.random() - 0.5) * (free ? 0.4 : 0.12),
-      vy:        (Math.random() - 0.5) * (free ? 0.4 : 0.12),
-      radius:    free
+function makeDot(edgePlaced: boolean): Dot {
+  const free = !edgePlaced && Math.random() < 0.28
+
+  let homeXF: number
+  let homeYF: number
+  if (edgePlaced) {
+    // Seed along one of the 4 edges, within 7% of the boundary
+    const depth = Math.random() * 0.07
+    const along = Math.random()
+    switch (Math.floor(Math.random() * 4)) {
+      case 0: homeXF = along;        homeYF = depth;        break  // top
+      case 1: homeXF = along;        homeYF = 1 - depth;    break  // bottom
+      case 2: homeXF = depth;        homeYF = along;        break  // left
+      default: homeXF = 1 - depth;  homeYF = along;        break  // right
+    }
+  } else {
+    homeXF = Math.random()
+    homeYF = Math.random()
+  }
+
+  return {
+    homeXF,
+    homeYF,
+    driftX:    0,
+    driftY:    0,
+    vx:        (Math.random() - 0.5) * (free ? 0.4 : 0.12),
+    vy:        (Math.random() - 0.5) * (free ? 0.4 : 0.12),
+    radius:    edgePlaced
+                 ? 0.5 + Math.random() * 1.4
+                 : free
                    ? 0.8 + Math.random() * 1.2
                    : Math.random() < 0.14
                      ? 2.2 + Math.random() * 1.4
                      : 0.6 + Math.random() * 1.6,
-      alpha:     free ? 0.18 + Math.random() * 0.35 : 0.28 + Math.random() * 0.72,
-      phase:     Math.random() * Math.PI * 2,
-      free,
-      sparkMode: false,
-      sparkAge:  0,
-    }
-  })
+    alpha:     free ? 0.18 + Math.random() * 0.35 : 0.30 + Math.random() * 0.70,
+    phase:     Math.random() * Math.PI * 2,
+    free,
+    sparkMode: false,
+    sparkAge:  0,
+  }
+}
+
+function initDots(): Dot[] {
+  return [
+    ...Array.from({ length: CONFIG.dotCount },   () => makeDot(false)),
+    ...Array.from({ length: CONFIG.edgeCount },   () => makeDot(true)),
+  ]
 }
 
 function drawDot(
