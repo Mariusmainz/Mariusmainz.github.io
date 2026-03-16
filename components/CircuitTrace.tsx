@@ -3,9 +3,8 @@
 import { useEffect, useRef } from 'react'
 
 export const CONFIG = {
-  dotCount: 200,
+  dotCount: 320,
   opacity:  0.60,
-  maxDrift: 70,    // max px each dot can wander from its resting position
 }
 
 const MAX_SPARK_AGE   = 160
@@ -22,27 +21,33 @@ interface Dot {
   radius:    number
   alpha:     number   // per-dot opacity multiplier (0.3–1.0)
   phase:     number
+  free:      boolean  // true → roams freely with larger range
   sparkMode: boolean
   sparkAge:  number
 }
 
 function initDots(): Dot[] {
-  return Array.from({ length: CONFIG.dotCount }, () => ({
-    homeXF:    Math.random(),
-    homeYF:    Math.random(),
-    driftX:    0,
-    driftY:    0,
-    vx:        (Math.random() - 0.5) * 0.12,
-    vy:        (Math.random() - 0.5) * 0.12,
-    // Mix of small ambient dots and occasional larger feature dots
-    radius:    Math.random() < 0.14
-                 ? 2.2 + Math.random() * 1.4
-                 : 0.6 + Math.random() * 1.6,
-    alpha:     0.28 + Math.random() * 0.72,
-    phase:     Math.random() * Math.PI * 2,
-    sparkMode: false,
-    sparkAge:  0,
-  }))
+  return Array.from({ length: CONFIG.dotCount }, () => {
+    const free = Math.random() < 0.28   // ~28% are free-roaming
+    return {
+      homeXF:    Math.random(),
+      homeYF:    Math.random(),
+      driftX:    0,
+      driftY:    0,
+      vx:        (Math.random() - 0.5) * (free ? 0.4 : 0.12),
+      vy:        (Math.random() - 0.5) * (free ? 0.4 : 0.12),
+      radius:    free
+                   ? 0.8 + Math.random() * 1.2
+                   : Math.random() < 0.14
+                     ? 2.2 + Math.random() * 1.4
+                     : 0.6 + Math.random() * 1.6,
+      alpha:     free ? 0.18 + Math.random() * 0.35 : 0.28 + Math.random() * 0.72,
+      phase:     Math.random() * Math.PI * 2,
+      free,
+      sparkMode: false,
+      sparkAge:  0,
+    }
+  })
 }
 
 function drawDot(
@@ -148,18 +153,21 @@ export default function CircuitTrace() {
           return
         }
 
-        // --- Calm atmospheric drift ---
-        dot.vx += (Math.random() - 0.5) * 0.07
-        dot.vy += (Math.random() - 0.5) * 0.07 - 0.003   // faint upward bias
-        dot.vx *= 0.95
-        dot.vy *= 0.95
+        // --- Drift physics — free dots roam wider, calm dots float softly ---
+        const noise  = dot.free ? 0.18 : 0.07
+        const damp   = dot.free ? 0.97 : 0.95
+        const spring = dot.free ? 0.0012 : 0.004
+        dot.vx += (Math.random() - 0.5) * noise
+        dot.vy += (Math.random() - 0.5) * noise - 0.003
+        dot.vx *= damp
+        dot.vy *= damp
 
         // Subtle scroll push — dots drift with the page momentum
         dot.vy += velocity * 0.006
 
         // Gentle spring back to resting position
-        dot.vx -= dot.driftX * 0.004
-        dot.vy -= dot.driftY * 0.004
+        dot.vx -= dot.driftX * spring
+        dot.vy -= dot.driftY * spring
 
         // Cursor magnetic pull — soft quadratic falloff
         const cx = homeX + dot.driftX
@@ -177,11 +185,12 @@ export default function CircuitTrace() {
         dot.driftX += dot.vx
         dot.driftY += dot.vy
 
-        // Hard drift limit — keeps each dot tethered to its home
+        // Drift limit — free dots roam up to 260px, calm dots up to 70px
+        const maxDrift = dot.free ? 260 : 70
         const driftMag = Math.sqrt(dot.driftX * dot.driftX + dot.driftY * dot.driftY)
-        if (driftMag > CONFIG.maxDrift) {
-          dot.driftX *= CONFIG.maxDrift / driftMag
-          dot.driftY *= CONFIG.maxDrift / driftMag
+        if (driftMag > maxDrift) {
+          dot.driftX *= maxDrift / driftMag
+          dot.driftY *= maxDrift / driftMag
         }
 
         // Rare ember spark
