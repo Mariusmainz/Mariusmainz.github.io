@@ -6,11 +6,11 @@ export const CONFIG = {
   dotCount:    100,
   opacity:     0.7,
   cloudRadius: 120,
-  glowSize:    3,
 }
 
 const SECTION_IDS = ['hero', 'about', 'experience', 'projects', 'skills', 'contact'] as const
 const FREEZE_DELAY_MS = 80
+const MAX_SPARK_AGE   = 110
 
 function catmullRomPoint(
   p0: [number, number], p1: [number, number],
@@ -60,25 +60,21 @@ function buildPathData(vw: number): PathData {
     const bottom = rect.bottom + window.scrollY
     sectionBounds.push({ top, bottom })
 
-    // During section: cloud retreats to alternating edges with varied depth
     const edgeXFrac = i % 2 === 0
-      ? 0.08 + Math.abs(Math.sin(i * 1.7)) * 0.09   // 8–17% from left
-      : 0.92 - Math.abs(Math.sin(i * 1.7)) * 0.09   // 83–92% from left
+      ? 0.08 + Math.abs(Math.sin(i * 1.7)) * 0.09
+      : 0.92 - Math.abs(Math.sin(i * 1.7)) * 0.09
     waypoints.push([vw * edgeXFrac, top + (bottom - top) * 0.5])
 
-    // Between sections: multiple waypoints with sinusoidal x variation → wavy path
     const nextEl = els[i + 1]
     if (nextEl) {
       const nRect   = nextEl.getBoundingClientRect()
       const nextTop = nRect.top + window.scrollY
       const gapLen  = nextTop - bottom
       if (gapLen > 20) {
-        // First curve point — offset left or right
         waypoints.push([
           vw * (0.5 + Math.sin(i * 2.3 + 1.0) * 0.28),
           bottom + gapLen * 0.35,
         ])
-        // Second curve point — opposite side
         waypoints.push([
           vw * (0.5 + Math.sin(i * 2.3 + 2.8) * 0.28),
           bottom + gapLen * 0.70,
@@ -92,26 +88,30 @@ function buildPathData(vw: number): PathData {
 }
 
 interface Dot {
-  angle:  number   // base angle from cloud center
-  dist:   number   // 0–1 fraction of cloudRadius
-  radius: number   // dot radius in px
-  phase:  number   // per-dot phase for time-based pulse
-  driftX: number   // current spark drift offset x
-  driftY: number   // current spark drift offset y
-  vx:     number   // drift velocity x
-  vy:     number   // drift velocity y
+  angle:     number
+  dist:      number
+  radius:    number   // base dot radius in px (1.5–3.5)
+  phase:     number
+  driftX:    number
+  driftY:    number
+  vx:        number
+  vy:        number
+  sparkMode: boolean
+  sparkAge:  number
 }
 
 function initDots(): Dot[] {
   return Array.from({ length: CONFIG.dotCount }, () => ({
-    angle:  Math.random() * Math.PI * 2,
-    dist:   Math.random(),
-    radius: 1.5 + Math.random() * 1.0,
-    phase:  Math.random() * Math.PI * 2,
-    driftX: 0,
-    driftY: 0,
-    vx:     (Math.random() - 0.5) * 0.4,
-    vy:     (Math.random() - 0.5) * 0.4,
+    angle:     Math.random() * Math.PI * 2,
+    dist:      Math.random(),
+    radius:    1.5 + Math.random() * 2.0,   // wider range for visible size variety
+    phase:     Math.random() * Math.PI * 2,
+    driftX:    0,
+    driftY:    0,
+    vx:        (Math.random() - 0.5) * 0.4,
+    vy:        (Math.random() - 0.5) * 0.4,
+    sparkMode: false,
+    sparkAge:  0,
   }))
 }
 
@@ -120,20 +120,8 @@ function drawDot(
   x: number, y: number,
   radius: number,
   opacity: number,
-  displayRadius: number,
 ) {
   if (opacity < 0.01) return
-
-  const glowR = Math.max(0.1, radius * CONFIG.glowSize * (displayRadius / CONFIG.cloudRadius))
-
-  const grd = ctx.createRadialGradient(x, y, 0, x, y, glowR)
-  grd.addColorStop(0, `rgba(56,189,248,${(opacity * 0.45).toFixed(3)})`)
-  grd.addColorStop(1, 'rgba(56,189,248,0)')
-  ctx.beginPath()
-  ctx.arc(x, y, glowR, 0, Math.PI * 2)
-  ctx.fillStyle = grd
-  ctx.fill()
-
   ctx.beginPath()
   ctx.arc(x, y, radius, 0, Math.PI * 2)
   ctx.fillStyle = `rgba(56,189,248,${opacity.toFixed(3)})`
@@ -153,13 +141,12 @@ export default function CircuitTrace() {
     let pathData: PathData = { waypoints: [], sectionBounds: [] }
     const dots   = initDots()
 
-    // Cloud state (page coordinates)
+    // Cloud position — cloudSY is in screen (viewport) coordinates
     let cloudX         = 0
-    let cloudY         = 0
+    let cloudSY        = 0
     let displayRadius  = CONFIG.cloudRadius
     let displayOpacity = CONFIG.opacity
 
-    // Scroll state
     let lastScrollY    = window.scrollY
     let velocity       = 0
     let lastScrollTime = 0
@@ -182,17 +169,20 @@ export default function CircuitTrace() {
       pathData  = buildPathData(cssW)
       maxScroll = Math.max(1, document.body.scrollHeight - cssH)
 
-      const progress = Math.min(1, window.scrollY / maxScroll)
-      const [ix, iy] = samplePath(pathData.waypoints, progress)
-      cloudX = ix
-      cloudY = iy
+      const progress  = Math.min(1, window.scrollY / maxScroll)
+      const [ix, iy]  = samplePath(pathData.waypoints, progress)
+      cloudX  = ix
+      cloudSY = iy - window.scrollY   // snap to current screen position
 
       cancelAnimationFrame(raf)
       raf = requestAnimationFrame(draw)
     }
 
-    const isInSection = (pageY: number): boolean =>
-      pathData.sectionBounds.some(b => pageY >= b.top && pageY <= b.bottom)
+    // Section check in page coordinates derived from screen y
+    const isInSection = (screenY: number): boolean => {
+      const pageY = screenY + window.scrollY
+      return pathData.sectionBounds.some(b => pageY >= b.top && pageY <= b.bottom)
+    }
 
     const draw = () => {
       if (document.hidden) {
@@ -208,60 +198,95 @@ export default function CircuitTrace() {
         velocity             = velocity + (rawVelocity - velocity) * 0.15
         lastScrollY          = currentScrollY
 
-        const progress = Math.min(1, currentScrollY / maxScroll)
-        const [tx, ty] = samplePath(pathData.waypoints, progress)
+        const progress  = Math.min(1, currentScrollY / maxScroll)
+        const [tx, ty]  = samplePath(pathData.waypoints, progress)
 
-        cloudX += (tx - cloudX) * 0.08
-        cloudY += (ty - cloudY) * 0.08
+        // Track cloud in screen coords so it stays in viewport regardless of scroll speed
+        const targetSY  = ty - currentScrollY
+        cloudX  += (tx      - cloudX)  * 0.03
+        cloudSY += (targetSY - cloudSY) * 0.03
 
-        // Zone detection: between sections = bloom, inside section = contract
-        const inSection     = isInSection(cloudY)
+        const inSection     = isInSection(cloudSY)
         const targetRadius  = inSection ? CONFIG.cloudRadius * 0.5 : CONFIG.cloudRadius * 1.6
         const targetOpacity = inSection ? CONFIG.opacity * 0.25    : CONFIG.opacity
-        displayRadius  += (targetRadius  - displayRadius)  * 0.06
-        displayOpacity += (targetOpacity - displayOpacity) * 0.06
+        displayRadius  += (targetRadius  - displayRadius)  * 0.03
+        displayOpacity += (targetOpacity - displayOpacity) * 0.03
       } else {
         velocity = 0
       }
 
       ctx.clearRect(0, 0, cssW, cssH)
 
-      const now     = performance.now()
-      const screenY = cloudY - window.scrollY
-      // Max drift radius scales with cloud size so sparks stay proportional
-      const maxDrift = displayRadius * 0.45
-      // Velocity stretch: elongate cloud in scroll direction
-      const stretch  = 1 + Math.min(Math.abs(velocity) * 0.012, 0.5)
+      const now = performance.now()
+      // Slow breathing size oscillation — cloud visibly expands and contracts
+      const radiusOsc   = 1 + 0.22 * Math.sin(now * 0.00022)
+      const effectiveR  = displayRadius * radiusOsc
+      const maxDrift    = effectiveR * 0.45
+      const stretch     = 1 + Math.min(Math.abs(velocity) * 0.012, 0.5)
 
       dots.forEach(dot => {
-        // --- Spark drift: random walk with slight upward bias + spring ---
-        dot.vx += (Math.random() - 0.5) * 0.9
-        dot.vy += (Math.random() - 0.5) * 0.9 - 0.12   // upward bias
-        dot.vx *= 0.90
-        dot.vy *= 0.90
-        // Soft spring back toward (0,0) so sparks don't escape the cloud
-        dot.vx -= dot.driftX * 0.018
-        dot.vy -= dot.driftY * 0.018
-        dot.driftX += dot.vx
-        dot.driftY += dot.vy
-        // Clamp to max drift radius
-        const driftMag = Math.sqrt(dot.driftX * dot.driftX + dot.driftY * dot.driftY)
-        if (driftMag > maxDrift) {
-          dot.driftX *= maxDrift / driftMag
-          dot.driftY *= maxDrift / driftMag
+        const pulse     = 1 + 0.25 * Math.sin(now * 0.0008 + dot.phase)
+        // Per-dot radius breathes at its own rate — creates visible size variation
+        const dotRadius = Math.max(0.5, dot.radius * (1 + 0.35 * Math.sin(now * 0.00030 + dot.phase * 1.7)))
+
+        if (dot.sparkMode) {
+          // Spark: free flight with damping, no spring force
+          dot.vx     *= 0.96
+          dot.vy     *= 0.96
+          dot.driftX += dot.vx
+          dot.driftY += dot.vy
+          dot.sparkAge++
+
+          const sparkOpacity = displayOpacity * 0.9 * (1 - dot.sparkAge / MAX_SPARK_AGE)
+          const r  = dot.dist * effectiveR * pulse
+          const x  = cloudX  + Math.cos(dot.angle) * r + dot.driftX
+          const y  = cloudSY + Math.sin(dot.angle) * r * stretch + dot.driftY
+          drawDot(ctx, x, y, Math.max(0.5, dotRadius * 0.65), sparkOpacity)
+
+          if (dot.sparkAge >= MAX_SPARK_AGE) {
+            dot.sparkMode = false
+            dot.sparkAge  = 0
+            dot.driftX    = 0
+            dot.driftY    = 0
+            dot.vx        = (Math.random() - 0.5) * 0.4
+            dot.vy        = (Math.random() - 0.5) * 0.4
+          }
+        } else {
+          // Regular dot: random walk with upward bias + spring
+          dot.vx += (Math.random() - 0.5) * 0.9
+          dot.vy += (Math.random() - 0.5) * 0.9 - 0.12
+          dot.vx *= 0.90
+          dot.vy *= 0.90
+          dot.vx -= dot.driftX * 0.018
+          dot.vy -= dot.driftY * 0.018
+          dot.driftX += dot.vx
+          dot.driftY += dot.vy
+
+          const driftMag = Math.sqrt(dot.driftX * dot.driftX + dot.driftY * dot.driftY)
+          if (driftMag > maxDrift) {
+            dot.driftX *= maxDrift / driftMag
+            dot.driftY *= maxDrift / driftMag
+          }
+
+          // Small chance to break free as a spark (only when cloud is bloomed)
+          if (displayOpacity > 0.35 && Math.random() < 0.001) {
+            dot.sparkMode = true
+            dot.sparkAge  = 0
+            const launchAngle = dot.angle + (Math.random() - 0.5) * 0.8
+            const speed       = 2.5 + Math.random() * 3.5
+            dot.vx = Math.cos(launchAngle) * speed
+            dot.vy = Math.sin(launchAngle) * speed - 0.8
+          }
+
+          const r  = dot.dist * effectiveR * pulse
+          const dx = Math.cos(dot.angle) * r + dot.driftX
+          const dy = Math.sin(dot.angle) * r * stretch + dot.driftY
+          const x  = cloudX  + dx
+          const y  = cloudSY + dy
+
+          const distOpacity = displayOpacity * (1 - dot.dist * 0.75)
+          drawDot(ctx, x, y, dotRadius, distOpacity)
         }
-
-        // Time-based pulse — always runs, even when frozen
-        const pulse = 1 + 0.25 * Math.sin(now * 0.0008 + dot.phase)
-
-        const r  = dot.dist * displayRadius * pulse
-        const dx = Math.cos(dot.angle) * r + dot.driftX
-        const dy = Math.sin(dot.angle) * r * stretch + dot.driftY
-        const x  = cloudX  + dx
-        const y  = screenY + dy
-
-        const distOpacity = displayOpacity * (1 - dot.dist * 0.75)
-        drawDot(ctx, x, y, dot.radius, distOpacity, displayRadius)
       })
 
       raf = requestAnimationFrame(draw)
