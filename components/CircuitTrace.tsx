@@ -133,7 +133,7 @@ export default function CircuitTrace() {
                   style={{
                     fillOpacity:   isActive ? 0.55  : 0.12,
                     strokeOpacity: isActive ? 0.90  : 0.35,
-                    filter:        isActive ? 'drop-shadow(0 0 6px rgba(56,189,248,0.6))' : 'none',
+                    filter:        isActive ? 'drop-shadow(0 0 6px rgba(56,189,248,0.6))' : 'drop-shadow(0 0 0px transparent)',
                     transition: 'fill-opacity 0.4s ease, stroke-opacity 0.4s ease, filter 0.4s ease',
                   }}
                 />
