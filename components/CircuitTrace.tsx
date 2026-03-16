@@ -130,8 +130,10 @@ export default function CircuitTrace() {
 
     let cloudX         = 0
     let cloudY         = 0
-    const displayRadius  = CONFIG.cloudRadius
-    const displayOpacity = CONFIG.opacity
+    // eslint-disable-next-line prefer-const
+    let displayRadius  = CONFIG.cloudRadius
+    // eslint-disable-next-line prefer-const
+    let displayOpacity = CONFIG.opacity
 
     const rebuild = () => {
       const dpr  = window.devicePixelRatio || 1
