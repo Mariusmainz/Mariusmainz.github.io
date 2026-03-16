@@ -5,7 +5,7 @@ export default function Contact() {
   return (
     <section id="contact" className="py-32 px-6 max-w-5xl mx-auto">
       <FadeIn>
-        <p className="font-mono text-accent text-xs tracking-[0.3em] uppercase mb-2">05 /</p>
+        <p className="font-mono text-amber-400 text-xs tracking-[0.3em] uppercase mb-2">05 /</p>
         <h2 className="text-3xl md:text-4xl font-bold text-text mb-4">Contact</h2>
         <p className="text-muted text-lg mb-16 max-w-lg">
           {personal.tagline}
