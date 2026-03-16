@@ -3,9 +3,9 @@
 import { useEffect, useRef } from 'react'
 
 export const CONFIG = {
-  dotCount:    100,
+  dotCount:    65,
   opacity:     0.7,
-  cloudRadius: 120,
+  cloudRadius: 170,
 }
 
 const SECTION_IDS = ['hero', 'about', 'experience', 'projects', 'skills', 'contact'] as const
@@ -178,12 +178,6 @@ export default function CircuitTrace() {
       raf = requestAnimationFrame(draw)
     }
 
-    // Section check in page coordinates derived from screen y
-    const isInSection = (screenY: number): boolean => {
-      const pageY = screenY + window.scrollY
-      return pathData.sectionBounds.some(b => pageY >= b.top && pageY <= b.bottom)
-    }
-
     const draw = () => {
       if (document.hidden) {
         raf = requestAnimationFrame(draw)
@@ -206,9 +200,10 @@ export default function CircuitTrace() {
         cloudX  += (tx      - cloudX)  * 0.03
         cloudSY += (targetSY - cloudSY) * 0.03
 
-        const inSection     = isInSection(cloudSY)
-        const targetRadius  = inSection ? CONFIG.cloudRadius * 0.5 : CONFIG.cloudRadius * 1.6
-        const targetOpacity = inSection ? CONFIG.opacity * 0.25    : CONFIG.opacity
+        // Zone: contract when the path heads to an edge (sections), bloom when near center (gaps)
+        const atEdge        = Math.abs(tx - cssW * 0.5) > cssW * 0.32
+        const targetRadius  = atEdge ? CONFIG.cloudRadius * 0.55 : CONFIG.cloudRadius * 1.5
+        const targetOpacity = atEdge ? CONFIG.opacity * 0.30     : CONFIG.opacity
         displayRadius  += (targetRadius  - displayRadius)  * 0.03
         displayOpacity += (targetOpacity - displayOpacity) * 0.03
       } else {
