@@ -10,13 +10,33 @@ import CircuitTrace from '@/components/CircuitTrace'
 export default function Home() {
   return (
     <div className="relative">
-      {/* Dot grid — fixed so it covers the full viewport at all scroll positions */}
+      {/* Dot grid */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
           zIndex: 0,
-          backgroundImage: 'radial-gradient(circle, rgba(0, 212, 255, 0.13) 1px, transparent 1px)',
+          backgroundImage: 'radial-gradient(circle, rgba(56, 189, 248, 0.10) 1px, transparent 1px)',
           backgroundSize: '40px 40px',
+        }}
+        aria-hidden="true"
+      />
+
+      {/* Cyan glow — top right */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          zIndex: 0,
+          background: 'radial-gradient(600px circle at 80% 10%, rgba(56,189,248,0.04), transparent)',
+        }}
+        aria-hidden="true"
+      />
+
+      {/* Amber glow — bottom left */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          zIndex: 0,
+          background: 'radial-gradient(600px circle at 20% 90%, rgba(245,158,11,0.03), transparent)',
         }}
         aria-hidden="true"
       />
