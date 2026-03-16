@@ -3,14 +3,16 @@
 import { useEffect, useRef } from 'react'
 
 export const CONFIG = {
-  dotCount:    65,
-  opacity:     0.7,
-  cloudRadius: 170,
+  dotCount:      160,
+  opacity:       0.65,
+  cloudRadius:   175,
 }
 
-const SECTION_IDS = ['hero', 'about', 'experience', 'projects', 'skills', 'contact'] as const
+const SECTION_IDS     = ['hero', 'about', 'experience', 'projects', 'skills', 'contact'] as const
 const FREEZE_DELAY_MS = 80
-const MAX_SPARK_AGE   = 110
+const MAX_SPARK_AGE   = 160
+const CURSOR_RADIUS   = 170   // px — magnetic pull range
+const CURSOR_STRENGTH = 0.20  // max velocity added per frame toward cursor
 
 function catmullRomPoint(
   p0: [number, number], p1: [number, number],
@@ -88,12 +90,12 @@ function buildPathData(vw: number): PathData {
 }
 
 interface Dot {
-  angle:     number
-  dist:      number
-  radius:    number   // base dot radius in px (1.5–3.5)
-  phase:     number
-  driftX:    number
-  driftY:    number
+  angle:     number   // orbital angle
+  dist:      number   // 0–1 fraction of cloud radius
+  radius:    number   // base dot radius in px
+  phase:     number   // per-dot phase offset
+  driftX:    number   // accumulated drift x
+  driftY:    number   // accumulated drift y
   vx:        number
   vy:        number
   sparkMode: boolean
@@ -101,18 +103,25 @@ interface Dot {
 }
 
 function initDots(): Dot[] {
-  return Array.from({ length: CONFIG.dotCount }, () => ({
-    angle:     Math.random() * Math.PI * 2,
-    dist:      Math.random(),
-    radius:    1.5 + Math.random() * 2.0,   // wider range for visible size variety
-    phase:     Math.random() * Math.PI * 2,
-    driftX:    0,
-    driftY:    0,
-    vx:        (Math.random() - 0.5) * 0.4,
-    vy:        (Math.random() - 0.5) * 0.4,
-    sparkMode: false,
-    sparkAge:  0,
-  }))
+  return Array.from({ length: CONFIG.dotCount }, () => {
+    // Bimodal distribution: tight inner cluster + sparse outer halo
+    const isInner = Math.random() < 0.62
+    const dist    = isInner
+      ? Math.random() * Math.random() * 0.88   // concentrated near center
+      : 0.45 + Math.random() * 0.55            // sparse outer halo
+    return {
+      angle:     Math.random() * Math.PI * 2,
+      dist:      Math.min(1, dist),
+      radius:    isInner ? 1.0 + Math.random() * 1.8 : 0.5 + Math.random() * 0.9,
+      phase:     Math.random() * Math.PI * 2,
+      driftX:    0,
+      driftY:    0,
+      vx:        (Math.random() - 0.5) * 0.12,
+      vy:        (Math.random() - 0.5) * 0.12,
+      sparkMode: false,
+      sparkAge:  0,
+    }
+  })
 }
 
 function drawDot(
@@ -121,7 +130,7 @@ function drawDot(
   radius: number,
   opacity: number,
 ) {
-  if (opacity < 0.01) return
+  if (opacity < 0.008) return
   ctx.beginPath()
   ctx.arc(x, y, radius, 0, Math.PI * 2)
   ctx.fillStyle = `rgba(56,189,248,${opacity.toFixed(3)})`
@@ -141,12 +150,13 @@ export default function CircuitTrace() {
     let pathData: PathData = { waypoints: [], sectionBounds: [] }
     const dots   = initDots()
 
-    // Cloud position — cloudSY is in screen (viewport) coordinates
+    // Cloud position in screen (viewport) coordinates
     let cloudX         = 0
     let cloudSY        = 0
     let displayRadius  = CONFIG.cloudRadius
     let displayOpacity = CONFIG.opacity
 
+    // Scroll state
     let lastScrollY    = window.scrollY
     let velocity       = 0
     let lastScrollTime = 0
@@ -154,7 +164,13 @@ export default function CircuitTrace() {
     let cssW = window.innerWidth
     let cssH = window.innerHeight
 
-    const onScroll = () => { lastScrollTime = Date.now() }
+    // Cursor position in viewport coords (-9999 = off-screen / inactive)
+    let mouseX = -9999
+    let mouseY = -9999
+
+    const onScroll    = () => { lastScrollTime = Date.now() }
+    const onMouseMove = (e: MouseEvent) => { mouseX = e.clientX; mouseY = e.clientY }
+    const onMouseOut  = () => { mouseX = -9999; mouseY = -9999 }
 
     const rebuild = () => {
       const dpr  = window.devicePixelRatio || 1
@@ -169,10 +185,10 @@ export default function CircuitTrace() {
       pathData  = buildPathData(cssW)
       maxScroll = Math.max(1, document.body.scrollHeight - cssH)
 
-      const progress  = Math.min(1, window.scrollY / maxScroll)
-      const [ix, iy]  = samplePath(pathData.waypoints, progress)
+      const progress = Math.min(1, window.scrollY / maxScroll)
+      const [ix, iy] = samplePath(pathData.waypoints, progress)
       cloudX  = ix
-      cloudSY = iy - window.scrollY   // snap to current screen position
+      cloudSY = iy - window.scrollY
 
       cancelAnimationFrame(raf)
       raf = requestAnimationFrame(draw)
@@ -189,23 +205,23 @@ export default function CircuitTrace() {
       if (!frozen) {
         const currentScrollY = window.scrollY
         const rawVelocity    = Math.max(-200, Math.min(200, currentScrollY - lastScrollY))
-        velocity             = velocity + (rawVelocity - velocity) * 0.15
+        velocity             = velocity + (rawVelocity - velocity) * 0.12
         lastScrollY          = currentScrollY
 
-        const progress  = Math.min(1, currentScrollY / maxScroll)
-        const [tx, ty]  = samplePath(pathData.waypoints, progress)
+        const progress = Math.min(1, currentScrollY / maxScroll)
+        const [tx, ty] = samplePath(pathData.waypoints, progress)
 
-        // Track cloud in screen coords so it stays in viewport regardless of scroll speed
-        const targetSY  = ty - currentScrollY
-        cloudX  += (tx      - cloudX)  * 0.03
-        cloudSY += (targetSY - cloudSY) * 0.03
+        // Cloud tracks in screen coords — stays in viewport regardless of scroll speed
+        const targetSY = ty - currentScrollY
+        cloudX  += (tx      - cloudX)  * 0.025
+        cloudSY += (targetSY - cloudSY) * 0.025
 
-        // Zone: contract when the path heads to an edge (sections), bloom when near center (gaps)
+        // Zone: contract at edges (sections), bloom near center (gaps between sections)
         const atEdge        = Math.abs(tx - cssW * 0.5) > cssW * 0.32
         const targetRadius  = atEdge ? CONFIG.cloudRadius * 0.55 : CONFIG.cloudRadius * 1.5
-        const targetOpacity = atEdge ? CONFIG.opacity * 0.30     : CONFIG.opacity
-        displayRadius  += (targetRadius  - displayRadius)  * 0.03
-        displayOpacity += (targetOpacity - displayOpacity) * 0.03
+        const targetOpacity = atEdge ? CONFIG.opacity * 0.28     : CONFIG.opacity
+        displayRadius  += (targetRadius  - displayRadius)  * 0.025
+        displayOpacity += (targetOpacity - displayOpacity) * 0.025
       } else {
         velocity = 0
       }
@@ -213,73 +229,106 @@ export default function CircuitTrace() {
       ctx.clearRect(0, 0, cssW, cssH)
 
       const now = performance.now()
-      // Slow breathing size oscillation — cloud visibly expands and contracts
-      const radiusOsc   = 1 + 0.22 * Math.sin(now * 0.00022)
-      const effectiveR  = displayRadius * radiusOsc
-      const maxDrift    = effectiveR * 0.45
-      const stretch     = 1 + Math.min(Math.abs(velocity) * 0.012, 0.5)
+
+      // Slow breathing size oscillation
+      const radiusOsc  = 1 + 0.18 * Math.sin(now * 0.00018)
+      const effectiveR = displayRadius * radiusOsc
+      const maxDrift   = effectiveR * 0.40
+
+      // Velocity stretch — elongates cloud in scroll direction
+      const stretch = 1 + Math.min(Math.abs(velocity) * 0.010, 0.45)
+
+      // Slow atmospheric wave — "wind through mist"
+      const wt      = now * 0.00010
+      const windAmp = effectiveR * 0.06   // 6% of cloud radius
 
       dots.forEach(dot => {
-        const pulse     = 1 + 0.25 * Math.sin(now * 0.0008 + dot.phase)
-        // Per-dot radius breathes at its own rate — creates visible size variation
-        const dotRadius = Math.max(0.5, dot.radius * (1 + 0.35 * Math.sin(now * 0.00030 + dot.phase * 1.7)))
+        // Subtle global pulse — all dots breathe together at their own phase
+        const pulse     = 1 + 0.15 * Math.sin(now * 0.0005 + dot.phase)
+        // Per-dot radius breathes slowly and independently
+        const dotRadius = Math.max(0.4,
+          dot.radius * (1 + 0.28 * Math.sin(now * 0.00020 + dot.phase * 1.6)),
+        )
 
         if (dot.sparkMode) {
-          // Spark: free flight with damping, no spring force
-          dot.vx     *= 0.96
-          dot.vy     *= 0.96
+          // Ember spark: graceful slow flight, fade to nothing
+          dot.vx     *= 0.97
+          dot.vy     *= 0.97
           dot.driftX += dot.vx
           dot.driftY += dot.vy
           dot.sparkAge++
 
-          const sparkOpacity = displayOpacity * 0.9 * (1 - dot.sparkAge / MAX_SPARK_AGE)
+          const sparkOpacity = displayOpacity * 0.60 * (1 - dot.sparkAge / MAX_SPARK_AGE)
           const r  = dot.dist * effectiveR * pulse
           const x  = cloudX  + Math.cos(dot.angle) * r + dot.driftX
           const y  = cloudSY + Math.sin(dot.angle) * r * stretch + dot.driftY
-          drawDot(ctx, x, y, Math.max(0.5, dotRadius * 0.65), sparkOpacity)
+          drawDot(ctx, x, y, Math.max(0.4, dotRadius * 0.45), sparkOpacity)
 
           if (dot.sparkAge >= MAX_SPARK_AGE) {
             dot.sparkMode = false
             dot.sparkAge  = 0
             dot.driftX    = 0
             dot.driftY    = 0
-            dot.vx        = (Math.random() - 0.5) * 0.4
-            dot.vy        = (Math.random() - 0.5) * 0.4
+            dot.vx        = (Math.random() - 0.5) * 0.12
+            dot.vy        = (Math.random() - 0.5) * 0.12
           }
         } else {
-          // Regular dot: random walk with upward bias + spring
-          dot.vx += (Math.random() - 0.5) * 0.9
-          dot.vy += (Math.random() - 0.5) * 0.9 - 0.12
-          dot.vx *= 0.90
-          dot.vy *= 0.90
-          dot.vx -= dot.driftX * 0.018
-          dot.vy -= dot.driftY * 0.018
+          // --- Calm atmospheric drift ---
+          // Very gentle random nudge — slow, smooth, premium
+          dot.vx += (Math.random() - 0.5) * 0.08
+          dot.vy += (Math.random() - 0.5) * 0.08 - 0.006   // faint upward drift
+          // Strong damping for smooth deceleration
+          dot.vx *= 0.95
+          dot.vy *= 0.95
+          // Gentle spring — each dot has a limited movement radius
+          dot.vx -= dot.driftX * 0.004
+          dot.vy -= dot.driftY * 0.004
+
+          // --- Cursor magnetic pull (soft, restrained) ---
+          const approxX = cloudX  + Math.cos(dot.angle) * dot.dist * effectiveR + dot.driftX
+          const approxY = cloudSY + Math.sin(dot.angle) * dot.dist * effectiveR + dot.driftY
+          const cdx     = mouseX - approxX
+          const cdy     = mouseY - approxY
+          const cdist2  = cdx * cdx + cdy * cdy
+          if (cdist2 < CURSOR_RADIUS * CURSOR_RADIUS && cdist2 > 0.01) {
+            const cdist = Math.sqrt(cdist2)
+            const t     = 1 - cdist / CURSOR_RADIUS
+            const pull  = t * t * CURSOR_STRENGTH   // quadratic falloff — soft near edge
+            dot.vx += (cdx / cdist) * pull
+            dot.vy += (cdy / cdist) * pull
+          }
+
           dot.driftX += dot.vx
           dot.driftY += dot.vy
 
+          // Soft clamp — limited drift radius per particle
           const driftMag = Math.sqrt(dot.driftX * dot.driftX + dot.driftY * dot.driftY)
           if (driftMag > maxDrift) {
             dot.driftX *= maxDrift / driftMag
             dot.driftY *= maxDrift / driftMag
           }
 
-          // Small chance to break free as a spark (only when cloud is bloomed)
-          if (displayOpacity > 0.35 && Math.random() < 0.001) {
+          // Sparse ember sparks — rare enough to feel intentional, not chaotic
+          if (displayOpacity > 0.38 && Math.random() < 0.00022) {
             dot.sparkMode = true
             dot.sparkAge  = 0
-            const launchAngle = dot.angle + (Math.random() - 0.5) * 0.8
-            const speed       = 2.5 + Math.random() * 3.5
+            const launchAngle = dot.angle + (Math.random() - 0.5) * 0.5
+            const speed       = 0.7 + Math.random() * 1.4   // slow, graceful
             dot.vx = Math.cos(launchAngle) * speed
-            dot.vy = Math.sin(launchAngle) * speed - 0.8
+            dot.vy = Math.sin(launchAngle) * speed - 0.35   // slight upward
           }
 
+          // Slow wave undulation — ripple that sweeps through the cloud
+          const windX = Math.sin(wt + dot.angle * 0.75) * windAmp
+          const windY = Math.cos(wt * 0.71 + dot.angle * 1.15) * windAmp * 0.5
+
           const r  = dot.dist * effectiveR * pulse
-          const dx = Math.cos(dot.angle) * r + dot.driftX
-          const dy = Math.sin(dot.angle) * r * stretch + dot.driftY
+          const dx = Math.cos(dot.angle) * r + dot.driftX + windX
+          const dy = Math.sin(dot.angle) * r * stretch + dot.driftY + windY
           const x  = cloudX  + dx
           const y  = cloudSY + dy
 
-          const distOpacity = displayOpacity * (1 - dot.dist * 0.75)
+          const distOpacity = displayOpacity * (1 - dot.dist * 0.58)
           drawDot(ctx, x, y, dotRadius, distOpacity)
         }
       })
@@ -288,14 +337,18 @@ export default function CircuitTrace() {
     }
 
     rebuild()
-    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('scroll',    onScroll,    { passive: true })
+    window.addEventListener('mousemove', onMouseMove, { passive: true })
+    window.addEventListener('mouseout',  onMouseOut,  { passive: true })
 
     const ro = new ResizeObserver(rebuild)
     ro.observe(document.documentElement)
 
     return () => {
       cancelAnimationFrame(raf)
-      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('scroll',    onScroll)
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseout',  onMouseOut)
       ro.disconnect()
     }
   }, [])
