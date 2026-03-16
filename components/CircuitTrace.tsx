@@ -11,7 +11,6 @@ export const CONFIG = {
 
 const SECTION_IDS = ['hero', 'about', 'experience', 'projects', 'skills', 'contact'] as const
 
-// Catmull-Rom spline interpolation between four control points
 function catmullRomPoint(
   p0: [number, number], p1: [number, number],
   p2: [number, number], p3: [number, number],
@@ -25,7 +24,6 @@ function catmullRomPoint(
   ]
 }
 
-// Sample a position t∈[0,1] along a Catmull-Rom path defined by waypoints
 function samplePath(waypoints: [number, number][], t: number): [number, number] {
   const n = waypoints.length
   if (n === 0) return [0, 0]
@@ -60,10 +58,8 @@ function buildPathData(vw: number): PathData {
     const top    = rect.top    + window.scrollY
     const bottom = rect.bottom + window.scrollY
     sectionBounds.push({ top, bottom })
-    // During section: cloud retreats to alternating edges
     const edgeX = i % 2 === 0 ? vw * 0.10 : vw * 0.90
     waypoints.push([edgeX, top + (bottom - top) * 0.5])
-    // After section: cloud blooms to center in the gap
     const nextEl = els[i + 1]
     if (nextEl) {
       const nRect   = nextEl.getBoundingClientRect()
@@ -78,6 +74,47 @@ function buildPathData(vw: number): PathData {
   return { waypoints, sectionBounds }
 }
 
+interface Dot {
+  angle:  number   // fixed angle from cloud center
+  dist:   number   // 0–1 fraction of cloudRadius
+  radius: number   // dot radius in px
+  phase:  number   // random offset for pulse sin
+}
+
+function initDots(): Dot[] {
+  return Array.from({ length: CONFIG.dotCount }, () => ({
+    angle:  Math.random() * Math.PI * 2,
+    dist:   Math.random(),
+    radius: 1.5 + Math.random() * 1.0,
+    phase:  Math.random() * Math.PI * 2,
+  }))
+}
+
+function drawDot(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number,
+  radius: number,
+  opacity: number,
+  displayRadius: number,
+) {
+  if (opacity < 0.01) return
+
+  const glowR = Math.max(0.1, radius * CONFIG.glowSize * (displayRadius / CONFIG.cloudRadius))
+
+  const grd = ctx.createRadialGradient(x, y, 0, x, y, glowR)
+  grd.addColorStop(0, `rgba(56,189,248,${(opacity * 0.45).toFixed(3)})`)
+  grd.addColorStop(1, 'rgba(56,189,248,0)')
+  ctx.beginPath()
+  ctx.arc(x, y, glowR, 0, Math.PI * 2)
+  ctx.fillStyle = grd
+  ctx.fill()
+
+  ctx.beginPath()
+  ctx.arc(x, y, radius, 0, Math.PI * 2)
+  ctx.fillStyle = `rgba(56,189,248,${opacity.toFixed(3)})`
+  ctx.fill()
+}
+
 export default function CircuitTrace() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -89,14 +126,15 @@ export default function CircuitTrace() {
 
     let raf      = 0
     let pathData: PathData = { waypoints: [], sectionBounds: [] }
-    let dpr      = 1
+    const dots   = initDots()
 
-    // Cloud center in PAGE coordinates
-    let cloudX = 0
-    let cloudY = 0
+    let cloudX         = 0
+    let cloudY         = 0
+    const displayRadius  = CONFIG.cloudRadius
+    const displayOpacity = CONFIG.opacity
 
     const rebuild = () => {
-      dpr = window.devicePixelRatio || 1
+      const dpr  = window.devicePixelRatio || 1
       const cssW = window.innerWidth
       const cssH = window.innerHeight
       canvas.width  = cssW * dpr
@@ -107,52 +145,51 @@ export default function CircuitTrace() {
 
       pathData = buildPathData(cssW)
 
-      // Snap cloud to current scroll position
       const maxScroll = Math.max(1, document.body.scrollHeight - window.innerHeight)
-      const progress  = window.scrollY / maxScroll
+      const progress  = Math.min(1, window.scrollY / maxScroll)
       const [ix, iy]  = samplePath(pathData.waypoints, progress)
       cloudX = ix
       cloudY = iy
 
-      // Re-queue draw so next frame uses fresh dimensions
       cancelAnimationFrame(raf)
       raf = requestAnimationFrame(draw)
     }
 
     const draw = () => {
-      const cssW = window.innerWidth
-      const cssH = window.innerHeight
       const { waypoints } = pathData
       const scrollY   = window.scrollY
       const maxScroll = Math.max(1, document.body.scrollHeight - window.innerHeight)
       const progress  = Math.min(1, scrollY / maxScroll)
       const [tx, ty]  = samplePath(waypoints, progress)
 
-      // Lerp cloud center toward target (page coords)
       cloudX += (tx - cloudX) * 0.08
       cloudY += (ty - cloudY) * 0.08
 
-      ctx.clearRect(0, 0, cssW, cssH)
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight)
 
-      // Debug: draw cloud center as a dot (verify path is working)
       const screenY = cloudY - scrollY
-      ctx.beginPath()
-      ctx.arc(cloudX, screenY, 6, 0, Math.PI * 2)
-      ctx.fillStyle = 'rgba(56,189,248,0.9)'
-      ctx.fill()
+
+      dots.forEach(dot => {
+        const r  = dot.dist * displayRadius
+        const dx = Math.cos(dot.angle) * r
+        const dy = Math.sin(dot.angle) * r
+        const x  = cloudX  + dx
+        const y  = screenY + dy
+        const distOpacity = displayOpacity * (1 - dot.dist * 0.75)
+        drawDot(ctx, x, y, dot.radius, distOpacity, displayRadius)
+      })
 
       raf = requestAnimationFrame(draw)
     }
 
     rebuild()
 
-    window.addEventListener('resize', rebuild)
+    // ResizeObserver on documentElement (not body) — avoids loop from canvas resize
     const ro = new ResizeObserver(rebuild)
-    ro.observe(document.body)
+    ro.observe(document.documentElement)
 
     return () => {
       cancelAnimationFrame(raf)
-      window.removeEventListener('resize', rebuild)
       ro.disconnect()
     }
   }, [])
