@@ -5,7 +5,6 @@ import { useEffect, useRef } from 'react'
 export const CONFIG = {
   dotCount:     320,
   edgeCount:    140,   // extra dots seeded along the 4 edges
-  heroCount:    120,   // chaotic dots concentrated around the hero area
   opacity:      0.60,
 }
 
@@ -21,34 +20,28 @@ interface Dot {
   vx:        number
   vy:        number
   radius:    number
-  alpha:     number   // per-dot opacity multiplier
+  alpha:     number   // per-dot opacity multiplier (0.3–1.0)
   phase:     number
-  free:      boolean  // roams freely with larger range
-  hero:      boolean  // chaotic hero-area dot
+  free:      boolean  // true → roams freely with larger range
   sparkMode: boolean
   sparkAge:  number
 }
 
-function makeDot(kind: 'ambient' | 'edge' | 'hero'): Dot {
-  const free = kind === 'ambient' && Math.random() < 0.28
-  const hero = kind === 'hero'
+function makeDot(edgePlaced: boolean): Dot {
+  const free = !edgePlaced && Math.random() < 0.28
 
   let homeXF: number
   let homeYF: number
-
-  if (kind === 'edge') {
+  if (edgePlaced) {
+    // Seed along one of the 4 edges, within 7% of the boundary
     const depth = Math.random() * 0.07
     const along = Math.random()
     switch (Math.floor(Math.random() * 4)) {
-      case 0: homeXF = along;       homeYF = depth;      break  // top
-      case 1: homeXF = along;       homeYF = 1 - depth;  break  // bottom
-      case 2: homeXF = depth;       homeYF = along;      break  // left
-      default: homeXF = 1 - depth; homeYF = along;      break  // right
+      case 0: homeXF = along;        homeYF = depth;        break  // top
+      case 1: homeXF = along;        homeYF = 1 - depth;    break  // bottom
+      case 2: homeXF = depth;        homeYF = along;        break  // left
+      default: homeXF = 1 - depth;  homeYF = along;        break  // right
     }
-  } else if (kind === 'hero') {
-    // Concentrated in the upper viewport — hero zone
-    homeXF = Math.random()
-    homeYF = Math.random() * 0.68
   } else {
     homeXF = Math.random()
     homeYF = Math.random()
@@ -59,23 +52,18 @@ function makeDot(kind: 'ambient' | 'edge' | 'hero'): Dot {
     homeYF,
     driftX:    0,
     driftY:    0,
-    vx:        (Math.random() - 0.5) * (hero ? 0.5 : free ? 0.4 : 0.12),
-    vy:        (Math.random() - 0.5) * (hero ? 0.5 : free ? 0.4 : 0.12),
-    radius:    kind === 'edge'
+    vx:        (Math.random() - 0.5) * (free ? 0.4 : 0.12),
+    vy:        (Math.random() - 0.5) * (free ? 0.4 : 0.12),
+    radius:    edgePlaced
                  ? 0.5 + Math.random() * 1.4
-                 : hero
-                   ? 0.4 + Math.random() * 1.8
-                   : free
-                     ? 0.8 + Math.random() * 1.2
-                     : Math.random() < 0.14
-                       ? 2.2 + Math.random() * 1.4
-                       : 0.6 + Math.random() * 1.6,
-    alpha:     hero ? 0.15 + Math.random() * 0.45
-                    : free ? 0.18 + Math.random() * 0.35
-                           : 0.30 + Math.random() * 0.70,
+                 : free
+                   ? 0.8 + Math.random() * 1.2
+                   : Math.random() < 0.14
+                     ? 2.2 + Math.random() * 1.4
+                     : 0.6 + Math.random() * 1.6,
+    alpha:     free ? 0.18 + Math.random() * 0.35 : 0.30 + Math.random() * 0.70,
     phase:     Math.random() * Math.PI * 2,
     free,
-    hero,
     sparkMode: false,
     sparkAge:  0,
   }
@@ -83,9 +71,8 @@ function makeDot(kind: 'ambient' | 'edge' | 'hero'): Dot {
 
 function initDots(): Dot[] {
   return [
-    ...Array.from({ length: CONFIG.dotCount  }, () => makeDot('ambient')),
-    ...Array.from({ length: CONFIG.edgeCount  }, () => makeDot('edge')),
-    ...Array.from({ length: CONFIG.heroCount  }, () => makeDot('hero')),
+    ...Array.from({ length: CONFIG.dotCount },   () => makeDot(false)),
+    ...Array.from({ length: CONFIG.edgeCount },   () => makeDot(true)),
   ]
 }
 
@@ -185,24 +172,16 @@ export default function CircuitTrace() {
           return
         }
 
-        // --- Drift physics ---
-        const noise  = dot.hero ? 0.32  : dot.free ? 0.18 : 0.07
-        const damp   = dot.hero ? 0.984 : dot.free ? 0.97 : 0.95
-        const spring = dot.hero ? 0.0006 : dot.free ? 0.0012 : 0.004
+        // --- Drift physics — free dots roam wider, calm dots float softly ---
+        const noise  = dot.free ? 0.18 : 0.07
+        const damp   = dot.free ? 0.97 : 0.95
+        const spring = dot.free ? 0.0012 : 0.004
         dot.vx += (Math.random() - 0.5) * noise
         dot.vy += (Math.random() - 0.5) * noise - 0.003
         dot.vx *= damp
         dot.vy *= damp
 
-        // Hero dots: slow rotating flow field — direction sweeps over ~52 s,
-        // creating structured-but-unpredictable currents through the hero area
-        if (dot.hero) {
-          const flowAngle = now * 0.00012 + dot.phase
-          dot.vx += Math.cos(flowAngle) * 0.018
-          dot.vy += Math.sin(flowAngle) * 0.018
-        }
-
-        // Spring back to resting position
+        // Gentle spring back to resting position
         dot.vx -= dot.driftX * spring
         dot.vy -= dot.driftY * spring
 
@@ -222,8 +201,8 @@ export default function CircuitTrace() {
         dot.driftX += dot.vx
         dot.driftY += dot.vy
 
-        // Drift limit
-        const maxDrift = dot.hero ? 340 : dot.free ? 260 : 70
+        // Drift limit — free dots roam up to 260px, calm dots up to 70px
+        const maxDrift = dot.free ? 260 : 70
         const driftMag = Math.sqrt(dot.driftX * dot.driftX + dot.driftY * dot.driftY)
         if (driftMag > maxDrift) {
           dot.driftX *= maxDrift / driftMag
