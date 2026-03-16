@@ -10,6 +10,7 @@ export const CONFIG = {
 }
 
 const SECTION_IDS = ['hero', 'about', 'experience', 'projects', 'skills', 'contact'] as const
+const FREEZE_DELAY_MS = 80
 
 function catmullRomPoint(
   p0: [number, number], p1: [number, number],
@@ -58,8 +59,10 @@ function buildPathData(vw: number): PathData {
     const top    = rect.top    + window.scrollY
     const bottom = rect.bottom + window.scrollY
     sectionBounds.push({ top, bottom })
+    // During section: cloud retreats to alternating edges
     const edgeX = i % 2 === 0 ? vw * 0.10 : vw * 0.90
     waypoints.push([edgeX, top + (bottom - top) * 0.5])
+    // After section: cloud blooms to center in the gap
     const nextEl = els[i + 1]
     if (nextEl) {
       const nRect   = nextEl.getBoundingClientRect()
@@ -78,7 +81,7 @@ interface Dot {
   angle:  number   // fixed angle from cloud center
   dist:   number   // 0–1 fraction of cloudRadius
   radius: number   // dot radius in px
-  phase:  number   // random offset for pulse sin
+  phase:  number   // per-dot offset for scrollY-driven pulse
 }
 
 function initDots(): Dot[] {
@@ -128,12 +131,19 @@ export default function CircuitTrace() {
     let pathData: PathData = { waypoints: [], sectionBounds: [] }
     const dots   = initDots()
 
+    // Cloud state (page coordinates)
     let cloudX         = 0
     let cloudY         = 0
-    // eslint-disable-next-line prefer-const
     let displayRadius  = CONFIG.cloudRadius
-    // eslint-disable-next-line prefer-const
     let displayOpacity = CONFIG.opacity
+
+    // Scroll state
+    let lastScrollY    = window.scrollY
+    let velocity       = 0
+    let lastScrollTime = 0
+    let maxScroll      = Math.max(1, document.body.scrollHeight - window.innerHeight)
+
+    const onScroll = () => { lastScrollTime = Date.now() }
 
     const rebuild = () => {
       const dpr  = window.devicePixelRatio || 1
@@ -145,11 +155,11 @@ export default function CircuitTrace() {
       canvas.style.height = `${cssH}px`
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-      pathData = buildPathData(cssW)
+      pathData  = buildPathData(cssW)
+      maxScroll = Math.max(1, document.body.scrollHeight - cssH)
 
-      const maxScroll = Math.max(1, document.body.scrollHeight - window.innerHeight)
-      const progress  = Math.min(1, window.scrollY / maxScroll)
-      const [ix, iy]  = samplePath(pathData.waypoints, progress)
+      const progress = Math.min(1, window.scrollY / maxScroll)
+      const [ix, iy] = samplePath(pathData.waypoints, progress)
       cloudX = ix
       cloudY = iy
 
@@ -157,26 +167,57 @@ export default function CircuitTrace() {
       raf = requestAnimationFrame(draw)
     }
 
-    const draw = () => {
-      const { waypoints } = pathData
-      const scrollY   = window.scrollY
-      const maxScroll = Math.max(1, document.body.scrollHeight - window.innerHeight)
-      const progress  = Math.min(1, scrollY / maxScroll)
-      const [tx, ty]  = samplePath(waypoints, progress)
+    const isInSection = (pageY: number): boolean =>
+      pathData.sectionBounds.some(b => pageY >= b.top && pageY <= b.bottom)
 
-      cloudX += (tx - cloudX) * 0.08
-      cloudY += (ty - cloudY) * 0.08
+    const draw = () => {
+      // Skip work on backgrounded tabs
+      if (document.hidden) {
+        raf = requestAnimationFrame(draw)
+        return
+      }
+
+      const frozen = Date.now() - lastScrollTime > FREEZE_DELAY_MS
+
+      if (!frozen) {
+        const currentScrollY = window.scrollY
+        const rawVelocity    = currentScrollY - lastScrollY
+        velocity             = velocity + (rawVelocity - velocity) * 0.15
+        lastScrollY          = currentScrollY
+
+        const progress = Math.min(1, currentScrollY / maxScroll)
+        const [tx, ty] = samplePath(pathData.waypoints, progress)
+
+        // Lerp cloud center toward path target
+        cloudX += (tx - cloudX) * 0.08
+        cloudY += (ty - cloudY) * 0.08
+
+        // Zone detection: between sections = bloom, inside section = contract
+        const inSection      = isInSection(cloudY)
+        const targetRadius   = inSection ? CONFIG.cloudRadius * 0.5  : CONFIG.cloudRadius * 1.6
+        const targetOpacity  = inSection ? CONFIG.opacity    * 0.25  : CONFIG.opacity
+        displayRadius  += (targetRadius  - displayRadius)  * 0.06
+        displayOpacity += (targetOpacity - displayOpacity) * 0.06
+      } else {
+        velocity = 0
+      }
 
       ctx.clearRect(0, 0, window.innerWidth, window.innerHeight)
 
-      const screenY = cloudY - scrollY
+      const screenY = cloudY - window.scrollY
 
       dots.forEach(dot => {
-        const r  = dot.dist * displayRadius
+        // Pulse: sin driven by scrollY so it only oscillates while scrolling
+        const pulse   = 1 + 0.2 * Math.sin(window.scrollY * 0.01 + dot.phase)
+        // Stretch: elongate cloud in scroll direction when scrolling fast
+        const stretch = 1 + Math.min(Math.abs(velocity) * 0.012, 0.5)
+
+        const r  = dot.dist * displayRadius * pulse
         const dx = Math.cos(dot.angle) * r
-        const dy = Math.sin(dot.angle) * r
+        const dy = Math.sin(dot.angle) * r * stretch
         const x  = cloudX  + dx
         const y  = screenY + dy
+
         const distOpacity = displayOpacity * (1 - dot.dist * 0.75)
         drawDot(ctx, x, y, dot.radius, distOpacity, displayRadius)
       })
@@ -185,13 +226,14 @@ export default function CircuitTrace() {
     }
 
     rebuild()
+    window.addEventListener('scroll', onScroll, { passive: true })
 
-    // ResizeObserver on documentElement (not body) — avoids loop from canvas resize
     const ro = new ResizeObserver(rebuild)
     ro.observe(document.documentElement)
 
     return () => {
       cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', onScroll)
       ro.disconnect()
     }
   }, [])
