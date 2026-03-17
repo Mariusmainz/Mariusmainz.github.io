@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 
 export const CONFIG = {
   dotCount:     320,
-  edgeCount:    140,   // extra dots seeded along the 4 edges
+  edgeCount:    140,
   opacity:      0.60,
 }
 
@@ -12,35 +12,62 @@ const MAX_SPARK_AGE   = 160
 const CURSOR_RADIUS   = 170
 const CURSOR_STRENGTH = 0.22
 
+// Star colour palette — weighted toward white/warm-white like the real night sky
+// Each entry: [r, g, b, weight]
+const STAR_PALETTE: [number, number, number, number][] = [
+  [255, 255, 255, 0.28],   // pure white
+  [255, 252, 242, 0.22],   // warm white
+  [210, 225, 255, 0.18],   // blue-white
+  [120, 160, 255, 0.10],   // blue
+  [255, 245, 120, 0.11],   // yellow
+  [255, 200,  80, 0.07],   // orange-yellow
+  [255, 110, 110, 0.04],   // red
+]
+
+// Build a cumulative distribution for fast weighted sampling
+const PALETTE_CDF = (() => {
+  let sum = 0
+  return STAR_PALETTE.map(([r, g, b, w]) => { sum += w; return { r, g, b, cdf: sum } })
+})()
+
+function pickColor(): string {
+  const t = Math.random()
+  const entry = PALETTE_CDF.find(e => t <= e.cdf) ?? PALETTE_CDF[PALETTE_CDF.length - 1]
+  return `${entry.r},${entry.g},${entry.b}`
+}
+
 interface Dot {
-  homeXF:    number   // resting x as 0–1 fraction of viewport width
-  homeYF:    number   // resting y as 0–1 fraction of viewport height
-  driftX:    number
-  driftY:    number
-  vx:        number
-  vy:        number
-  radius:    number
-  alpha:     number   // per-dot opacity multiplier (0.3–1.0)
-  phase:     number
-  free:      boolean  // true → roams freely with larger range
-  sparkMode: boolean
-  sparkAge:  number
+  homeXF:       number
+  homeYF:       number
+  driftX:       number
+  driftY:       number
+  vx:           number
+  vy:           number
+  radius:       number
+  alpha:        number
+  phase:        number
+  color:        string   // 'r,g,b'
+  twinkle:      boolean  // true → this star scintillates
+  twinkleSpeed: number   // rad/ms — individual flicker rate
+  free:         boolean
+  sparkMode:    boolean
+  sparkAge:     number
 }
 
 function makeDot(edgePlaced: boolean): Dot {
-  const free = !edgePlaced && Math.random() < 0.28
+  const free    = !edgePlaced && Math.random() < 0.28
+  const twinkle = Math.random() < 0.28   // ~28% of stars twinkle
 
   let homeXF: number
   let homeYF: number
   if (edgePlaced) {
-    // Seed along one of the 4 edges, within 7% of the boundary
     const depth = Math.random() * 0.07
     const along = Math.random()
     switch (Math.floor(Math.random() * 4)) {
-      case 0: homeXF = along;        homeYF = depth;        break  // top
-      case 1: homeXF = along;        homeYF = 1 - depth;    break  // bottom
-      case 2: homeXF = depth;        homeYF = along;        break  // left
-      default: homeXF = 1 - depth;  homeYF = along;        break  // right
+      case 0: homeXF = along;       homeYF = depth;      break
+      case 1: homeXF = along;       homeYF = 1 - depth;  break
+      case 2: homeXF = depth;       homeYF = along;      break
+      default: homeXF = 1 - depth; homeYF = along;      break
     }
   } else {
     homeXF = Math.random()
@@ -50,42 +77,60 @@ function makeDot(edgePlaced: boolean): Dot {
   return {
     homeXF,
     homeYF,
-    driftX:    0,
-    driftY:    0,
-    vx:        (Math.random() - 0.5) * (free ? 0.4 : 0.12),
-    vy:        (Math.random() - 0.5) * (free ? 0.4 : 0.12),
-    radius:    edgePlaced
-                 ? 0.5 + Math.random() * 1.4
-                 : free
-                   ? 0.8 + Math.random() * 1.2
-                   : Math.random() < 0.14
-                     ? 2.2 + Math.random() * 1.4
-                     : 0.6 + Math.random() * 1.6,
-    alpha:     free ? 0.18 + Math.random() * 0.35 : 0.30 + Math.random() * 0.70,
-    phase:     Math.random() * Math.PI * 2,
+    driftX:       0,
+    driftY:       0,
+    vx:           (Math.random() - 0.5) * (free ? 0.4 : 0.12),
+    vy:           (Math.random() - 0.5) * (free ? 0.4 : 0.12),
+    radius:       edgePlaced
+                    ? 0.5 + Math.random() * 1.4
+                    : free
+                      ? 0.8 + Math.random() * 1.2
+                      : Math.random() < 0.14
+                        ? 2.2 + Math.random() * 1.4
+                        : 0.6 + Math.random() * 1.6,
+    alpha:        free ? 0.18 + Math.random() * 0.35 : 0.30 + Math.random() * 0.70,
+    phase:        Math.random() * Math.PI * 2,
+    color:        pickColor(),
+    twinkle,
+    twinkleSpeed: 0.0012 + Math.random() * 0.0022,   // ~0.5–3 s per cycle
     free,
-    sparkMode: false,
-    sparkAge:  0,
+    sparkMode:    false,
+    sparkAge:     0,
   }
 }
 
 function initDots(): Dot[] {
   return [
-    ...Array.from({ length: CONFIG.dotCount },   () => makeDot(false)),
-    ...Array.from({ length: CONFIG.edgeCount },   () => makeDot(true)),
+    ...Array.from({ length: CONFIG.dotCount }, () => makeDot(false)),
+    ...Array.from({ length: CONFIG.edgeCount }, () => makeDot(true)),
   ]
 }
 
-function drawDot(
+function drawStar(
   ctx: CanvasRenderingContext2D,
   x: number, y: number,
   radius: number,
   opacity: number,
+  color: string,
+  glow: boolean,
 ) {
   if (opacity < 0.008) return
+
+  if (glow) {
+    // Tight halo for brighter/twinkling stars — like atmospheric diffraction spikes
+    const glowR = radius * 3.5
+    const grd = ctx.createRadialGradient(x, y, 0, x, y, glowR)
+    grd.addColorStop(0, `rgba(${color},${(opacity * 0.35).toFixed(3)})`)
+    grd.addColorStop(1, `rgba(${color},0)`)
+    ctx.beginPath()
+    ctx.arc(x, y, glowR, 0, Math.PI * 2)
+    ctx.fillStyle = grd
+    ctx.fill()
+  }
+
   ctx.beginPath()
   ctx.arc(x, y, radius, 0, Math.PI * 2)
-  ctx.fillStyle = `rgba(56,189,248,${opacity.toFixed(3)})`
+  ctx.fillStyle = `rgba(${color},${opacity.toFixed(3)})`
   ctx.fill()
 }
 
@@ -113,9 +158,6 @@ export default function CircuitTrace() {
     const rebuild = () => {
       const newW = window.innerWidth
       const newH = window.innerHeight
-      // Only resize the canvas when the viewport itself changes.
-      // Page-content changes (e.g. accordion expand) alter scrollHeight but
-      // not innerWidth/innerHeight — skipping here prevents the 1-frame blank flash.
       if (newW === cssW && newH === cssH) return
       const dpr = window.devicePixelRatio || 1
       cssW = newW
@@ -134,19 +176,17 @@ export default function CircuitTrace() {
 
       ctx.clearRect(0, 0, cssW, cssH)
 
-      const now = performance.now()
-      // Slow spatial wave — period ~63 s, sweeps across the screen
-      const wt = now * 0.00010
-      // Edge zone: opacity boosts toward the frame boundary
+      const now        = performance.now()
+      const wt         = now * 0.00010
       const edgeMargin = Math.min(cssW, cssH) * 0.40
 
       dots.forEach(dot => {
         const homeX = dot.homeXF * cssW
         const homeY = dot.homeYF * cssH
 
-        // Per-dot radius breathes slowly
+        // Base radius breathes gently
         const dotRadius = Math.max(0.4,
-          dot.radius * (1 + 0.22 * Math.sin(now * 0.00018 + dot.phase * 1.5)),
+          dot.radius * (1 + 0.18 * Math.sin(now * 0.00018 + dot.phase * 1.5)),
         )
 
         if (dot.sparkMode) {
@@ -156,15 +196,17 @@ export default function CircuitTrace() {
           dot.driftY += dot.vy
           dot.sparkAge++
 
-          const fadeT  = 1 - dot.sparkAge / MAX_SPARK_AGE
-          const sx     = homeX + dot.driftX
-          const sy     = homeY + dot.driftY
-          const edgeT  = 1 - Math.min(1, Math.max(0, Math.min(sx, cssW - sx, sy, cssH - sy)) / edgeMargin)
+          const fadeT   = 1 - dot.sparkAge / MAX_SPARK_AGE
+          const sx      = homeX + dot.driftX
+          const sy      = homeY + dot.driftY
+          const edgeT   = 1 - Math.min(1, Math.max(0, Math.min(sx, cssW - sx, sy, cssH - sy)) / edgeMargin)
           const edgeMul = 1 + edgeT * edgeT * 0.9
-          drawDot(
+          drawStar(
             ctx, sx, sy,
             Math.max(0.4, dotRadius * 0.45),
             Math.min(1, CONFIG.opacity * dot.alpha * 0.55 * fadeT * edgeMul),
+            dot.color,
+            false,
           )
 
           if (dot.sparkAge >= MAX_SPARK_AGE) {
@@ -178,7 +220,7 @@ export default function CircuitTrace() {
           return
         }
 
-        // --- Drift physics — free dots roam wider, calm dots float softly ---
+        // Physics
         const noise  = dot.free ? 0.18 : 0.07
         const damp   = dot.free ? 0.97 : 0.95
         const spring = dot.free ? 0.0012 : 0.004
@@ -186,14 +228,12 @@ export default function CircuitTrace() {
         dot.vy += (Math.random() - 0.5) * noise - 0.003
         dot.vx *= damp
         dot.vy *= damp
-
-        // Gentle spring back to resting position
         dot.vx -= dot.driftX * spring
         dot.vy -= dot.driftY * spring
 
-        // Cursor magnetic pull — soft quadratic falloff
-        const cx = homeX + dot.driftX
-        const cy = homeY + dot.driftY
+        // Cursor pull
+        const cx     = homeX + dot.driftX
+        const cy     = homeY + dot.driftY
         const cdx    = mouseX - cx
         const cdy    = mouseY - cy
         const cdist2 = cdx * cdx + cdy * cdy
@@ -207,7 +247,6 @@ export default function CircuitTrace() {
         dot.driftX += dot.vx
         dot.driftY += dot.vy
 
-        // Drift limit — free dots roam up to 260px, calm dots up to 70px
         const maxDrift = dot.free ? 260 : 70
         const driftMag = Math.sqrt(dot.driftX * dot.driftX + dot.driftY * dot.driftY)
         if (driftMag > maxDrift) {
@@ -215,7 +254,7 @@ export default function CircuitTrace() {
           dot.driftY *= maxDrift / driftMag
         }
 
-        // Rare ember spark
+        // Spark emission
         if (Math.random() < 0.00012) {
           dot.sparkMode = true
           dot.sparkAge  = 0
@@ -225,16 +264,30 @@ export default function CircuitTrace() {
           dot.vy = Math.sin(a) * s - 0.3
         }
 
-        // Slow spatial wave — position offset that sweeps across the field
+        // Position with wind undulation
         const windAmp = 9
         const windX   = Math.sin(wt + homeX * 0.0030) * windAmp
         const windY   = Math.cos(wt * 0.71 + homeY * 0.0028) * windAmp * 0.5
+        const x       = homeX + dot.driftX + windX
+        const y       = homeY + dot.driftY + windY
 
-        const x      = homeX + dot.driftX + windX
-        const y      = homeY + dot.driftY + windY
-        const edgeT  = 1 - Math.min(1, Math.max(0, Math.min(x, cssW - x, y, cssH - y)) / edgeMargin)
+        // Edge intensity boost
+        const edgeT   = 1 - Math.min(1, Math.max(0, Math.min(x, cssW - x, y, cssH - y)) / edgeMargin)
         const edgeMul = 1 + edgeT * edgeT * 0.9
-        drawDot(ctx, x, y, dotRadius, Math.min(1, CONFIG.opacity * dot.alpha * edgeMul))
+
+        // Twinkle — spike opacity briefly then drop, independent per star
+        let twinkleMul = 1
+        if (dot.twinkle) {
+          const s = Math.sin(now * dot.twinkleSpeed + dot.phase)
+          // Squared sine gives sharp bright spikes with dimmer troughs
+          twinkleMul = 0.25 + 0.75 * s * s
+        }
+
+        const finalOpacity = Math.min(1, CONFIG.opacity * dot.alpha * edgeMul * twinkleMul)
+        // Draw glow only on brighter twinkling stars to keep it subtle
+        const showGlow = dot.twinkle && twinkleMul > 0.75 && dot.radius > 1.2
+
+        drawStar(ctx, x, y, dotRadius, finalOpacity, dot.color, showGlow)
       })
 
       raf = requestAnimationFrame(draw)
