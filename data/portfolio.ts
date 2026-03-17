@@ -228,9 +228,6 @@ export const projects: Project[] = [
     tags: ['Embedded', 'Mechanical', 'DTU', 'Automation'],
     detail: 'Group project at DTU designing and building an automated sorting machine. Covers mechanical design, embedded control, and systems integration.',
     type: 'academic',
-    media: [
-      { type: 'pdf', src: '/Resources/projects/sorting-machine.pdf', label: 'View Report' },
-    ],
   },
 ]
 
