@@ -8,6 +8,8 @@ export default function Hero() {
   const scrollToProjects = () =>
     document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })
 
+  useEffect(() => { history.scrollRestoration = 'manual' }, [])
+
   const fullName = personal.name
   const [charCount, setCharCount] = useState(0)
 
