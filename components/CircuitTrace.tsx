@@ -3,8 +3,8 @@
 import { useEffect, useRef } from 'react'
 
 export const CONFIG = {
-  dotCount:     320,
-  edgeCount:    140,
+  dotCount:     600,
+  edgeCount:    240,
   opacity:      0.60,
 }
 
