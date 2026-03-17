@@ -111,9 +111,15 @@ export default function CircuitTrace() {
     const onMouseOut  = () => { mouseX = -9999; mouseY = -9999 }
 
     const rebuild = () => {
+      const newW = window.innerWidth
+      const newH = window.innerHeight
+      // Only resize the canvas when the viewport itself changes.
+      // Page-content changes (e.g. accordion expand) alter scrollHeight but
+      // not innerWidth/innerHeight — skipping here prevents the 1-frame blank flash.
+      if (newW === cssW && newH === cssH) return
       const dpr = window.devicePixelRatio || 1
-      cssW = window.innerWidth
-      cssH = window.innerHeight
+      cssW = newW
+      cssH = newH
       canvas.width  = cssW * dpr
       canvas.height = cssH * dpr
       canvas.style.width  = `${cssW}px`
