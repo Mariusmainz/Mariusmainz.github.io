@@ -284,10 +284,8 @@ export default function CircuitTrace() {
         }
 
         const finalOpacity = Math.min(1, CONFIG.opacity * dot.alpha * edgeMul * twinkleMul)
-        // Draw glow only on brighter twinkling stars to keep it subtle
-        const showGlow = dot.twinkle && twinkleMul > 0.75 && dot.radius > 1.2
 
-        drawStar(ctx, x, y, dotRadius, finalOpacity, dot.color, showGlow)
+        drawStar(ctx, x, y, dotRadius, finalOpacity, dot.color, false)
       })
 
       raf = requestAnimationFrame(draw)
