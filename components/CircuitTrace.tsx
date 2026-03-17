@@ -258,7 +258,7 @@ export default function CircuitTrace() {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none hidden xl:block"
+      className="fixed inset-0 pointer-events-none"
       style={{ zIndex: 0 }}
       aria-hidden="true"
     />
