@@ -101,8 +101,8 @@ export default function CircuitTrace() {
     let raf  = 0
     const dots = initDots()
 
-    let cssW = window.innerWidth
-    let cssH = window.innerHeight
+    let cssW = 0
+    let cssH = 0
 
     let mouseX = -9999
     let mouseY = -9999
