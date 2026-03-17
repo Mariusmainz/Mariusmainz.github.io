@@ -30,14 +30,15 @@ export default function Hero() {
           transition={{ delay: 0.2 }}
           className="font-mono text-accent text-sm tracking-[0.3em] uppercase mb-4"
         >
-          — Portfolio
+          — Portfolio —
         </motion.p>
 
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
-          className="text-5xl md:text-7xl font-bold text-text mb-4 tracking-tight"
+          className="text-6xl md:text-8xl text-text mb-4"
+          style={{ fontFamily: 'var(--font-great-vibes)', fontWeight: 400 }}
         >
           {personal.name}
         </motion.h1>
