@@ -1,7 +1,2 @@
-import { Great_Vibes } from 'next/font/google'
-
-export const greatVibes = Great_Vibes({
-  subsets: ['latin'],
-  weight: '400',
-  variable: '--font-great-vibes',
-})
+// Font definitions for Next.js font optimization
+// JetBrains Mono is loaded via @fontsource in globals.css

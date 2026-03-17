@@ -1,11 +1,21 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { personal } from '@/data/portfolio'
 
 export default function Hero() {
   const scrollToProjects = () =>
     document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })
+
+  const fullName = personal.name
+  const [charCount, setCharCount] = useState(0)
+
+  useEffect(() => {
+    if (charCount >= fullName.length) return
+    const t = setTimeout(() => setCharCount(c => c + 1), 72)
+    return () => clearTimeout(t)
+  }, [charCount, fullName.length])
 
   return (
     <section id="hero" className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -34,13 +44,13 @@ export default function Hero() {
         </motion.p>
 
         <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
-          className="text-6xl md:text-8xl text-text mb-4"
-          style={{ fontFamily: 'var(--font-great-vibes)', fontWeight: 400 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.1 }}
+          className="font-mono text-4xl md:text-6xl font-bold text-text mb-4 tracking-tight"
         >
-          {personal.name}
+          {fullName.slice(0, charCount)}
+          <span className="cursor-blink inline-block w-[2px] h-[0.85em] bg-accent align-middle ml-[2px]" />
         </motion.h1>
 
         <motion.p
