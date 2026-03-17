@@ -152,7 +152,7 @@ export const projects: Project[] = [
     title: 'Autonomous Digital Integration (OpenROAD)',
     shortDescription: 'Autonomous integration of digital blocks using OpenROAD Flow Scripts.',
     tags: ['Cadence', 'ORFS', 'IC Design', 'PDK'],
-    detail: 'Autonomous integration of digital blocks in Cadence using OpenROAD Flow Scripts with a closed PDK for DTU.',
+    detail: 'Autonomous integration of digital blocks in Cadence using OpenROAD Flow Scripts with a closed PDK for DTU. NDA protected until 2028.',
     type: 'professional',
   },
   {
@@ -228,6 +228,9 @@ export const projects: Project[] = [
     tags: ['Embedded', 'Mechanical', 'DTU', 'Automation'],
     detail: 'Group project at DTU designing and building an automated sorting machine. Covers mechanical design, embedded control, and systems integration.',
     type: 'academic',
+    media: [
+      { type: 'pdf', src: '/Resources/projects/sorting-machine.pdf', label: 'View Report' },
+    ],
   },
 ]
 
