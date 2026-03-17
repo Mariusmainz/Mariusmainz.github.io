@@ -128,6 +128,14 @@ export const education: EducationEntry[] = [
     period: '2020 – 2023',
     description: 'Core electrical engineering curriculum: circuit theory, signals, embedded systems, and electronics.',
   },
+  {
+    id: 'military',
+    degree: 'Military Service',
+    field: '3rd Marine Squadron · Danish Army',
+    institution: 'Almegårds Kaserne',
+    period: 'Aug 2018 – Dec 2018',
+    description: 'Conscript training at the 3rd Marine Squadron (Marineeskadronen) on Bornholm, part of the Reconnaissance Battalion at the Guard Hussar Regiment. The unit combines traditional infantry work with maritime and coastal operations in the rugged cliff and coastline terrain of Bornholm. Training covered marksmanship, navigation, first aid, CBRN (chemical, biological, radiological, and nuclear threats), and signals. Completed the Marine Decathlon — a demanding final skills assessment. Selected to represent the regiment at a multi-discipline shooting competition in Holstebro against units from across the Danish Army, where the team was awarded a gold medal.',
+  },
 ]
 
 export const projects: Project[] = [
