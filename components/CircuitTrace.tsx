@@ -56,7 +56,7 @@ interface Dot {
 
 function makeDot(edgePlaced: boolean): Dot {
   const free    = !edgePlaced && Math.random() < 0.28
-  const twinkle = Math.random() < 0.28   // ~28% of stars twinkle
+  const twinkle = Math.random() < 0.15   // ~15% of stars twinkle
 
   let homeXF: number
   let homeYF: number
@@ -92,7 +92,7 @@ function makeDot(edgePlaced: boolean): Dot {
     phase:        Math.random() * Math.PI * 2,
     color:        pickColor(),
     twinkle,
-    twinkleSpeed: 0.0012 + Math.random() * 0.0022,   // ~0.5–3 s per cycle
+    twinkleSpeed: 0.0003 + Math.random() * 0.0035,   // ~0.3–6 s per cycle (wide spread)
     free,
     sparkMode:    false,
     sparkAge:     0,
