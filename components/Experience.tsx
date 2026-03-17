@@ -51,7 +51,7 @@ function TimelineItem({
               exit={{ opacity: 0, height: 0 }}
               className="overflow-hidden"
             >
-              <p className="text-muted text-sm mt-3 leading-relaxed">{description}</p>
+              <p className="text-muted text-sm mt-3 leading-relaxed text-justify">{description}</p>
               {images && images.length > 0 && (
                 <div className="grid grid-cols-2 gap-2 mt-4">
                   {images.map((img, i) => (

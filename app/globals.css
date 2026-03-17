@@ -18,6 +18,7 @@ html {
   color: var(--text);
   scrollbar-width: thin;
   scrollbar-color: #00d4ff #0a0a0a;
+  scrollbar-gutter: stable;
 }
 
 body {

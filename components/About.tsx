@@ -24,7 +24,7 @@ export default function About() {
         </FadeIn>
 
         <FadeIn delay={0.2} className="flex flex-col gap-6">
-          <p className="text-text/80 leading-relaxed text-lg">{personal.about}</p>
+          <p className="text-text/80 leading-relaxed text-lg text-justify">{personal.about}</p>
 
           <div className="flex flex-col gap-2 font-mono text-sm">
             <div className="flex gap-3">

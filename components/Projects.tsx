@@ -89,7 +89,7 @@ export default function Projects() {
                       <div className="pl-5 sm:pl-16 pr-5 pb-8 pt-1">
 
                         {/* Detail text */}
-                        <p className="text-muted text-sm leading-relaxed mb-5 max-w-2xl">
+                        <p className="text-muted text-sm leading-relaxed mb-5 max-w-2xl text-justify">
                           {project.detail ?? project.shortDescription}
                         </p>
 
